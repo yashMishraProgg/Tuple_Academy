@@ -6,22 +6,30 @@ Run: python app.py
 import sqlite3, hashlib, uuid, os, secrets
 from datetime import datetime, timedelta
 from functools import wraps
-import tempfile
 from flask import (
     Flask, request, jsonify, g, session,
     render_template, redirect, url_for
 )
 
 app = Flask(__name__)
-app.config["SECRET_KEY"]    = os.environ.get("SECRET_KEY", "tuple-academy-dev-secret-2025")
-db_path = os.path.join(tempfile.gettempdir(), "tuple.db")
-app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "static", "uploads")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "tuple-academy-dev-secret-2025")
+
+# ── DATABASE PATH ─────────────────────────────────────────────
+# On Render (and most cloud hosts) the project directory is read-only.
+# We use /tmp for the DB when running in production (RENDER env var is set
+# automatically by Render). Locally we use instance/ as before.
+if os.environ.get("RENDER"):
+    _db_dir = "/tmp"
+else:
+    _db_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
+
+app.config["DATABASE"]      = os.path.join(_db_dir, "tuple.db")
+app.config["UPLOAD_FOLDER"] = os.path.join(_db_dir, "uploads")
 app.permanent_session_lifetime = timedelta(days=7)
 
 # ── DB ────────────────────────────────────────────────────────
 def get_db():
     if "db" not in g:
-        # SQLite will create the file in /tmp automatically if it doesn't exist
         g.db = sqlite3.connect(app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES)
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA journal_mode=WAL")
@@ -50,8 +58,14 @@ def row(sql, p=()):
 
 # ── SCHEMA ────────────────────────────────────────────────────
 def init_db():
-    os.makedirs(os.path.dirname(app.config["DATABASE"]), exist_ok=True)
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    # makedirs safely — /tmp already exists on Render
+    db_dir = os.path.dirname(app.config["DATABASE"])
+    if db_dir and db_dir != "/tmp":
+        os.makedirs(db_dir, exist_ok=True)
+    try:
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    except OSError:
+        pass
     get_db().executescript("""
     CREATE TABLE IF NOT EXISTS users (
         id         TEXT PRIMARY KEY,
@@ -430,5 +444,4 @@ if __name__ == "__main__":
     print("\n  ✦  Tuple Academy → http://localhost:5000")
     print("  ✦  Admin:   admin@tupleacademy.in  /  admin123")
     print("  ✦  Student: student@example.com    /  student123\n")
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, port=5000)
