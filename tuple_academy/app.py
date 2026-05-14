@@ -13,14 +13,19 @@ from flask import (
 
 app = Flask(__name__)
 app.config["SECRET_KEY"]    = os.environ.get("SECRET_KEY", "tuple-academy-dev-secret-2025")
-app.config["DATABASE"]      = os.path.join(os.path.dirname(__file__), "instance", "tuple.db")
+app.config["DATABASE"] = os.path.join(app.root_path, "instance", "tuple.db")
 app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "static", "uploads")
 app.permanent_session_lifetime = timedelta(days=7)
 
 # ── DB ────────────────────────────────────────────────────────
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES)
+        # ENSURE DIRECTORY EXISTS
+        db_path = app.config["DATABASE"]
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        
+        # Now connect
+        g.db = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA journal_mode=WAL")
         g.db.execute("PRAGMA foreign_keys=ON")
