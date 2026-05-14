@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: tuple-academy
+    runtime: python
+    buildCommand: pip install flask gunicorn
+    startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT --timeout 120
+    envVars:
+      - key: RENDER
+        value: "true"
+    rootDir: tuple_academy
