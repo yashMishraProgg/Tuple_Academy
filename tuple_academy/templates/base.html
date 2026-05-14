@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Tuple Academy{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C14B28;--rust-h:#A33D20;--rust-pale:#F5D5C8;--rust-pale2:#FDF0EB;
+  --bark:#2C1A0E;--bark2:#3D2416;--bark-mid:#5C3D2E;--bark-soft:#8B6355;
+  --cream:#FAF7F2;--cream2:#F3ECE2;--cream3:#EDE3D5;--warm-white:#FFFEFB;
+  --gold:#C68B3A;--gold2:#E8B96A;--sage:#6B7C60;--sand:#C4B49A;
+  --muted:#7A6355;--body:#3D2B1F;--ink:#1E1208;
+  --border:rgba(92,61,46,0.12);--border2:rgba(92,61,46,0.22);
+  --shadow:0 2px 20px rgba(44,26,14,0.08);--shadow2:0 8px 40px rgba(44,26,14,0.14);
+  --radius:12px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--body);line-height:1.7;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+button,input,select,textarea{font-family:inherit}
+
+/* ─── NAV ─── */
+header{position:sticky;top:0;z-index:200;background:rgba(250,247,242,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);transition:box-shadow .3s}
+header.scrolled{box-shadow:var(--shadow)}
+nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo svg{width:28px;height:28px;flex-shrink:0}
+.logo-text{font-family:'Lora',serif;font-weight:700;font-size:17px;color:var(--bark);letter-spacing:-.3px}
+.logo-text span{color:var(--rust)}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none}
+.nav-links a{font-size:14px;font-weight:500;color:var(--muted);padding:7px 13px;border-radius:8px;transition:all .18s}
+.nav-links a:hover,.nav-links a.active{color:var(--bark);background:var(--cream2)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.btn-ghost{font-size:13.5px;font-weight:500;color:var(--bark-mid);background:none;border:1.5px solid var(--border2);padding:7px 16px;border-radius:8px;cursor:pointer;transition:all .18s}
+.btn-ghost:hover{border-color:var(--rust);color:var(--rust)}
+.btn-primary{font-size:13.5px;font-weight:600;color:#fff;background:var(--rust);border:none;padding:8px 18px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
+.btn-primary:hover{background:var(--rust-h);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+.hamburger span{display:block;width:22px;height:2px;background:var(--bark-mid);border-radius:2px;transition:.2s}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:var(--cream);border-bottom:1px solid var(--border);padding:16px 20px;z-index:190;flex-direction:column;gap:4px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-size:15px;font-weight:500;color:var(--bark-mid);padding:10px 14px;border-radius:8px;transition:.15s}
+.mobile-menu a:hover{background:var(--cream2);color:var(--rust)}
+
+/* ─── TOAST ─── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast-msg{background:var(--bark);color:var(--cream);padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;max-width:320px;box-shadow:var(--shadow2);animation:toastIn .3s ease;pointer-events:all}
+.toast-msg.success{border-left:4px solid var(--sage)}
+.toast-msg.error{border-left:4px solid var(--rust)}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;border:none;cursor:pointer;transition:all .2s;border-radius:9px}
+.btn-lg{font-size:15px;padding:13px 28px}
+.btn-md{font-size:14px;padding:10px 22px}
+.btn-sm{font-size:13px;padding:7px 16px}
+.btn-rust{background:var(--rust);color:#fff;box-shadow:0 4px 16px rgba(193,75,40,.25)}
+.btn-rust:hover{background:var(--rust-h);transform:translateY(-1px);box-shadow:0 6px 20px rgba(193,75,40,.32)}
+.btn-outline-rust{background:none;color:var(--rust);border:2px solid var(--rust)}
+.btn-outline-rust:hover{background:var(--rust);color:#fff}
+.btn-white{background:#fff;color:var(--rust)}
+.btn-white:hover{transform:translateY(-1px);box-shadow:var(--shadow2)}
+.btn-ghost-white{background:none;color:rgba(255,255,255,.9);border:1.5px solid rgba(255,255,255,.35)}
+.btn-ghost-white:hover{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.1)}
+
+/* ─── SECTION SHARED ─── */
+section{padding:80px 24px}
+.sec{max-width:1200px;margin:0 auto}
+.sec-label{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--rust);margin-bottom:10px}
+h2.sec-title{font-family:'Lora',serif;font-size:clamp(26px,3.5vw,40px);font-weight:700;color:var(--ink);line-height:1.2;letter-spacing:-.7px;margin-bottom:12px}
+.sec-sub{font-size:16px;color:var(--bark-soft);max-width:520px;line-height:1.7}
+
+/* ─── CARDS ─── */
+.card{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s}
+.card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:var(--shadow2)}
+
+/* ─── FORMS ─── */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--bark-mid);margin-bottom:6px}
+.form-input{width:100%;background:var(--cream2);border:1.5px solid var(--border2);border-radius:9px;padding:11px 14px;font-size:14px;color:var(--ink);outline:none;transition:border-color .18s;appearance:none}
+.form-input:focus{border-color:var(--rust);background:var(--warm-white)}
+.form-error{font-size:12px;color:var(--rust);margin-top:4px;display:none}
+.form-error.show{display:block}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.badge-beginner{background:rgba(107,124,96,.12);color:var(--sage)}
+.badge-intermediate{background:rgba(198,139,58,.12);color:#8a5e1a}
+.badge-advanced{background:rgba(193,75,40,.12);color:var(--rust)}
+.badge-pending{background:rgba(198,139,58,.12);color:#8a5e1a}
+.badge-accepted{background:rgba(107,124,96,.15);color:var(--sage)}
+.badge-completed{background:rgba(193,75,40,.12);color:var(--rust)}
+.badge-rejected{background:rgba(120,120,120,.12);color:#888}
+
+/* ─── FOOTER ─── */
+footer{background:var(--ink);color:var(--cream2);padding:56px 24px 28px}
+.footer-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-logo{font-family:'Lora',serif;font-size:19px;font-weight:700;color:var(--cream);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.footer-brand p{font-size:13.5px;color:var(--sand);line-height:1.7;max-width:280px;margin-bottom:18px}
+.footer-socials{display:flex;gap:8px}
+.footer-social{width:32px;height:32px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--sand);transition:.18s}
+.footer-social:hover{background:var(--rust);color:#fff;border-color:var(--rust)}
+.footer-col h4{font-size:13px;font-weight:600;color:var(--cream);margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-col li a{font-size:13px;color:var(--sand);transition:.18s}
+.footer-col li a:hover{color:var(--rust-pale)}
+.footer-bottom{max-width:1200px;margin:0 auto;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-bottom p,.footer-bottom a{font-size:12.5px;color:var(--sand);opacity:.65}
+.footer-bottom a:hover{opacity:1}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(30,18,8,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:var(--warm-white);border-radius:18px;width:100%;max-width:460px;padding:36px;position:relative;transform:translateY(20px);transition:transform .25s;box-shadow:0 32px 80px rgba(30,18,8,.4)}
+.modal-overlay.open .modal-box{transform:none}
+.modal-close{position:absolute;top:18px;right:18px;width:30px;height:30px;background:var(--cream2);border:none;border-radius:50%;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:.18s}
+.modal-close:hover{background:var(--rust);color:#fff}
+
+/* ─── REVEAL ─── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  .nav-links,.nav-right{display:none}
+  .hamburger{display:flex}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:28px}
+}
+@media(max-width:600px){
+  section{padding:56px 16px}
+  .footer-grid{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;align-items:flex-start}
+}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<header id="header">
+<nav>
+  <a href="/" class="logo">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/>
+      <rect x="17.5" y="17.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/>
+      <path d="M6 10.5 L6 22 L17.5 22" stroke="#C14B28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="logo-text">Tuple <span>Academy</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/" {% if request.path=='/' %}class="active"{% endif %}>Home</a></li>
+    <li><a href="/internships" {% if request.path=='/internships' %}class="active"{% endif %}>Internships</a></li>
+    <li><a href="/about" {% if request.path=='/about' %}class="active"{% endif %}>About</a></li>
+    <li><a href="/verify" {% if request.path=='/verify' %}class="active"{% endif %}>Verify</a></li>
+    <li><a href="/contact" {% if request.path=='/contact' %}class="active"{% endif %}>Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    {% if user %}
+      {% if user.role == 'admin' %}
+        <a href="/admin" class="btn-ghost">Admin Panel</a>
+      {% else %}
+        <a href="/dashboard" class="btn-ghost">Dashboard</a>
+      {% endif %}
+      <button class="btn-primary" onclick="logout()">Log Out</button>
+    {% else %}
+      <a href="/login" class="btn-ghost">Log In</a>
+      <a href="/register" class="btn-primary">Get Started →</a>
+    {% endif %}
+  </div>
+  <button class="hamburger" id="ham" onclick="toggleMob()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+</header>
+
+<div class="mobile-menu" id="mobMenu">
+  <a href="/" onclick="closeMob()">Home</a>
+  <a href="/internships" onclick="closeMob()">Internships</a>
+  <a href="/about" onclick="closeMob()">About</a>
+  <a href="/verify" onclick="closeMob()">Verify Certificate</a>
+  <a href="/contact" onclick="closeMob()">Contact</a>
+  {% if user %}
+    <a href="/dashboard" onclick="closeMob()">My Dashboard</a>
+    <a href="#" onclick="logout()" style="color:var(--rust);font-weight:600">Log Out</a>
+  {% else %}
+    <a href="/login" onclick="closeMob()">Log In</a>
+    <a href="/register" onclick="closeMob()" style="color:var(--rust);font-weight:600">Get Started →</a>
+  {% endif %}
+</div>
+
+<main>{% block content %}{% endblock %}</main>
+
+<div id="toast"></div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+          <rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/>
+          <rect x="17.5" y="17.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/>
+          <path d="M6 10.5 L6 22 L17.5 22" stroke="#C14B28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Tuple Academy
+      </div>
+      <p>Real virtual internships for Indian college students and freshers. Build skills, earn verified certificates, launch your career.</p>
+      <div class="footer-socials">
+        <a href="#" class="footer-social">in</a>
+        <a href="#" class="footer-social">𝕏</a>
+        <a href="#" class="footer-social">▶</a>
+        <a href="#" class="footer-social">ig</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Internships</h4>
+      <ul>
+        <li><a href="/internships?cat=tech">Tech & Dev</a></li>
+        <li><a href="/internships?cat=design">Design</a></li>
+        <li><a href="/internships?cat=marketing">Marketing</a></li>
+        <li><a href="/internships?cat=business">Business</a></li>
+        <li><a href="/internships">View All 18 →</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about">About Us</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/verify">Verify Certificate</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Account</h4>
+      <ul>
+        <li><a href="/register">Register</a></li>
+        <li><a href="/login">Log In</a></li>
+        <li><a href="/dashboard">Dashboard</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Tuple Academy · Made with ♥ in India</p>
+    <div style="display:flex;gap:20px">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms & Conditions</a>
+      <a href="#">Refund Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll',()=>document.getElementById('header').classList.toggle('scrolled',scrollY>20));
+
+// Mobile nav
+function toggleMob(){document.getElementById('mobMenu').classList.toggle('open')}
+function closeMob(){document.getElementById('mobMenu').classList.remove('open')}
+
+// Reveal
+new IntersectionObserver((es)=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*80);}}),{threshold:.1})
+  .observe||(() => {
+    const obs = new IntersectionObserver((es)=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*80);}}),{threshold:.1});
+    document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+  })();
+document.addEventListener('DOMContentLoaded',()=>{
+  const obs = new IntersectionObserver((es)=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('visible'),i*90);}}),{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+});
+
+// Toast
+function toast(msg, type='success'){
+  const t=document.createElement('div');
+  t.className=`toast-msg ${type}`;t.textContent=msg;
+  document.getElementById('toast').appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+// Logout
+function logout(){
+  fetch('/api/logout',{method:'POST'}).then(r=>r.json()).then(d=>{if(d.redirect)location.href=d.redirect});
+}
+
+// Generic form submit via fetch
+function submitForm(form, url, opts={}){
+  const data={};
+  new FormData(form).forEach((v,k)=>data[k]=v);
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.ok){
+        toast(d.message||'Done!','success');
+        if(opts.onSuccess) opts.onSuccess(d);
+        if(d.redirect) setTimeout(()=>location.href=d.redirect,800);
+      } else {
+        toast(d.error||'Something went wrong','error');
+        if(opts.onError) opts.onError(d);
+      }
+    })
+    .catch(()=>toast('Network error','error'));
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

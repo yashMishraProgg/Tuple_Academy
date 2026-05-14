@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Log In — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.auth-wrap{min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--cream)}
+.auth-card{background:var(--warm-white);border:1.5px solid var(--border2);border-radius:20px;padding:44px 40px;width:100%;max-width:440px;box-shadow:var(--shadow2)}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px}
+.auth-logo svg{width:28px;height:28px}
+.auth-logo span{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--bark)}
+.auth-logo span em{color:var(--rust);font-style:normal}
+.auth-title{font-family:'Lora',serif;font-size:26px;font-weight:700;color:var(--ink);margin-bottom:6px;text-align:center}
+.auth-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:30px}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border2)}
+.auth-footer{text-align:center;margin-top:20px;font-size:14px;color:var(--muted)}
+.auth-footer a{color:var(--rust);font-weight:600}
+.demo-box{background:var(--cream2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:22px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.demo-box strong{color:var(--bark-mid);display:block;margin-bottom:4px}
+@media(max-width:500px){.auth-card{padding:32px 22px}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 28 28" fill="none"><rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/><rect x="17.5" y="17.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/><path d="M6 10.5 L6 22 L17.5 22" stroke="#C14B28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Tuple <em>Academy</em></span>
+    </div>
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-sub">Log in to access your internship dashboard</p>
+
+    <div class="demo-box">
+      <strong>🔑 Demo Credentials</strong>
+      Student: student@example.com / student123<br>
+      Admin: admin@tupleacademy.in / admin123
+    </div>
+
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" name="email" required placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" name="password" required placeholder="Your password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-rust btn-lg" style="width:100%;justify-content:center;margin-top:8px" id="loginBtn">
+        Log In →
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="/register">Create one free →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function doLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.textContent='Logging in…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Welcome back!','success');setTimeout(()=>location.href=d.redirect,600);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Log In →';}
+    }).catch(()=>{toast('Network error','error');btn.disabled=false;btn.textContent='Log In →';});
+}
+</script>
+{% endblock %}

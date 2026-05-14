@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Internships — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.page-hero{background:var(--bark2);padding:80px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23fff' fill-opacity='0.03'/%3E%3C/svg%3E")}
+.page-hero h1{font-family:'Lora',serif;font-size:clamp(28px,4vw,46px);font-weight:700;color:#fff;letter-spacing:-.8px;margin-bottom:12px;position:relative;z-index:1}
+.page-hero p{font-size:16px;color:var(--sand);max-width:500px;margin:0 auto;position:relative;z-index:1}
+.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:32px 0}
+.filter-btn{font-size:13.5px;font-weight:500;color:var(--bark-mid);background:var(--warm-white);border:1.5px solid var(--border2);padding:8px 18px;border-radius:20px;cursor:pointer;transition:.18s}
+.filter-btn:hover,.filter-btn.active{background:var(--rust);color:#fff;border-color:var(--rust)}
+.intern-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.intern-card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:24px;transition:.25s;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.intern-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--rust);transform:scaleX(0);transition:.25s;transform-origin:left}
+.intern-card:hover{transform:translateY(-4px);border-color:var(--border2);box-shadow:var(--shadow2)}
+.intern-card:hover::after{transform:scaleX(1)}
+.ic-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.ic-emoji{width:48px;height:48px;background:var(--cream2);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.ic-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.ic-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;flex:1}
+.ic-skills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.skill-tag{font-size:11px;font-weight:500;color:var(--bark-mid);background:var(--cream2);border:1px solid var(--border);padding:2px 8px;border-radius:4px}
+.ic-meta{display:flex;gap:16px;padding-top:12px;border-top:1px solid var(--border);margin-bottom:14px}
+.ic-meta span{font-size:12px;color:var(--bark-soft);display:flex;align-items:center;gap:4px}
+.ic-footer{display:flex;align-items:center;justify-content:space-between}
+.ic-slots{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.slot-dot{width:6px;height:6px;border-radius:50%;background:var(--sage)}
+.ic-btn{font-size:13px;font-weight:600;color:var(--rust);background:var(--rust-pale2);border:1.5px solid rgba(193,75,40,.2);padding:8px 16px;border-radius:8px;cursor:pointer;transition:.18s}
+.ic-btn:hover{background:var(--rust);color:#fff;border-color:var(--rust)}
+.no-results{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
+@media(max-width:900px){.intern-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.intern-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <h1>Find Your Internship</h1>
+  <p>18+ domains. Real tasks. Verified certificates. Start your career the right way.</p>
+</div>
+
+<section>
+<div class="sec">
+  {% set emojis = {'tech':'💻','design':'🎨','marketing':'📣','business':'💼'} %}
+  <div class="filters">
+    <button class="filter-btn {% if active_cat=='all' %}active{% endif %}" onclick="filter('all',this)">All Domains</button>
+    <button class="filter-btn {% if active_cat=='tech' %}active{% endif %}" onclick="filter('tech',this)">⚙️ Tech & Dev</button>
+    <button class="filter-btn {% if active_cat=='design' %}active{% endif %}" onclick="filter('design',this)">🎨 Design</button>
+    <button class="filter-btn {% if active_cat=='marketing' %}active{% endif %}" onclick="filter('marketing',this)">📣 Marketing</button>
+    <button class="filter-btn {% if active_cat=='business' %}active{% endif %}" onclick="filter('business',this)">💼 Business</button>
+  </div>
+
+  <div class="intern-grid" id="grid">
+  {% for i in internships %}
+  <div class="intern-card reveal" data-cat="{{ i.category }}">
+    <div class="ic-top">
+      <div class="ic-emoji">{{ emojis.get(i.category,'📋') }}</div>
+      <span class="badge badge-{{ i.difficulty|lower }}">{{ i.difficulty }}</span>
+    </div>
+    <div class="ic-title">{{ i.title }}</div>
+    <div class="ic-desc">{{ i.description }}</div>
+    {% if i.skills %}
+    <div class="ic-skills">
+      {% for s in i.skills.split(',')[:4] %}
+      <span class="skill-tag">{{ s.strip() }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="ic-meta">
+      <span>📅 {{ i.duration_weeks }} Weeks</span>
+      <span>👥 {{ i.enrolled }}+ enrolled</span>
+    </div>
+    <div class="ic-footer">
+      <div class="ic-slots"><div class="slot-dot"></div>Accepting now</div>
+      <button class="ic-btn" onclick="openApply('{{ i.id }}','{{ i.title }}')">Apply →</button>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+  {% if not internships %}
+  <div class="no-results">No internships found in this category.</div>
+  {% endif %}
+</div>
+</section>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="applyModal" onclick="if(event.target===this)closeApply()">
+<div class="modal-box">
+  <button class="modal-close" onclick="closeApply()">✕</button>
+  <h3 style="font-family:'Lora',serif;font-size:21px;font-weight:700;color:var(--ink);margin-bottom:6px">Apply for Internship</h3>
+  <p style="font-size:14px;color:var(--muted);margin-bottom:22px" id="applyTitle">Applying for this internship</p>
+  <input type="hidden" id="applyId">
+  <form id="applyForm" onsubmit="doApply(event)">
+    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" name="name" placeholder="Your name" required></div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" type="email" name="email" placeholder="you@email.com" required></div>
+    <div class="form-group"><label class="form-label">College</label><input class="form-input" name="college" placeholder="Your college"></div>
+    <div class="form-group"><label class="form-label">Stream</label><input class="form-input" name="stream" placeholder="CSE / BBA / etc."></div>
+    <div class="form-group"><label class="form-label">Why this internship? (optional)</label><textarea class="form-input" name="motivation" rows="2" style="resize:vertical"></textarea></div>
+    <button type="submit" class="btn btn-rust btn-lg" style="width:100%;justify-content:center;margin-top:8px">Submit Application →</button>
+  </form>
+  <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">🔒 Free to apply.</p>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filter(cat,btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#grid .intern-card').forEach(c=>{c.style.display=(cat==='all'||c.dataset.cat===cat)?'':'none'});
+}
+function openApply(id,title){
+  document.getElementById('applyId').value=id;
+  document.getElementById('applyTitle').textContent='Applying for: '+title;
+  document.getElementById('applyModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeApply(){document.getElementById('applyModal').classList.remove('open');document.body.style.overflow='';}
+function doApply(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Submitting…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  data.internship_id=document.getElementById('applyId').value;
+  fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast(d.message,'success');closeApply();setTimeout(()=>location.href=d.redirect,800);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Submit Application →';}
+    }).catch(()=>{toast('Network error','error');btn.disabled=false;btn.textContent='Submit Application →';});
+}
+</script>
+{% endblock %}

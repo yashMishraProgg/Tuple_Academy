@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.dash-layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 64px)}
+.dash-sidebar{background:var(--warm-white);border-right:1px solid var(--border);padding:28px 16px;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+.dash-user{text-align:center;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.dash-avatar{width:64px;height:64px;border-radius:50%;background:var(--rust);display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-size:24px;font-weight:700;color:#fff;margin:0 auto 12px}
+.dash-name{font-weight:600;color:var(--ink);font-size:15px}
+.dash-email{font-size:12px;color:var(--muted);margin-top:2px}
+.dash-college{font-size:12px;color:var(--bark-soft);margin-top:3px}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px}
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:.18s;border:none;background:none;width:100%;text-align:left}
+.sidebar-link:hover,.sidebar-link.active{background:var(--cream2);color:var(--rust)}
+.sidebar-link span{font-size:16px}
+.dash-content{padding:36px;background:var(--cream)}
+.dash-header{margin-bottom:32px}
+.dash-header h1{font-family:'Lora',serif;font-size:26px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.dash-header p{font-size:14px;color:var(--muted)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:var(--warm-white);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:center;gap:16px}
+.stat-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-info .n{font-family:'Lora',serif;font-size:24px;font-weight:700;color:var(--ink);line-height:1}
+.stat-info .l{font-size:12px;color:var(--muted);margin-top:3px}
+.tab-section{display:none}
+.tab-section.active{display:block}
+.section-card{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.section-card h2{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.app-item{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.app-item:last-child{border-bottom:none}
+.app-info h4{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.app-info p{font-size:12.5px;color:var(--muted)}
+.app-right{text-align:right;flex-shrink:0}
+.app-right .score{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--ink)}
+.app-right .date{font-size:11.5px;color:var(--muted);margin-top:3px}
+.cert-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;background:linear-gradient(135deg,#fdf8f2,#f7ead8);border:1.5px solid var(--gold);border-radius:12px;margin-bottom:10px}
+.cert-info h4{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.cert-info p{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.cert-actions{display:flex;gap:8px;flex-shrink:0}
+.cert-btn{font-size:12px;font-weight:600;padding:6px 12px;border-radius:7px;cursor:pointer;border:none;transition:.18s}
+.cert-btn-gold{background:var(--gold);color:#fff}
+.cert-btn-gold:hover{background:#a8722c}
+.cert-btn-outline{background:none;color:var(--rust);border:1.5px solid rgba(193,75,40,.3)}
+.cert-btn-outline:hover{background:var(--rust);color:#fff}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .emoji{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:15px;margin-bottom:16px}
+
+@media(max-width:900px){
+  .dash-layout{grid-template-columns:1fr}
+  .dash-sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:16px}
+  .dash-user{display:flex;align-items:center;gap:14px;text-align:left;margin-bottom:16px;padding-bottom:16px}
+  .dash-avatar{width:44px;height:44px;font-size:16px;margin:0}
+  .sidebar-nav{flex-direction:row;gap:4px;overflow-x:auto;padding-bottom:4px}
+  .sidebar-link{white-space:nowrap;padding:8px 12px}
+  .dash-content{padding:20px 16px}
+  .stats-row{grid-template-columns:1fr 1fr}
+}
+@media(max-width:500px){.stats-row{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="dash-layout">
+  <!-- SIDEBAR -->
+  <div class="dash-sidebar">
+    <div class="dash-user">
+      <div class="dash-avatar">{{ user.name[0].upper() }}</div>
+      <div>
+        <div class="dash-name">{{ user.name }}</div>
+        <div class="dash-email">{{ user.email }}</div>
+        {% if user.college %}<div class="dash-college">{{ user.college }}</div>{% endif %}
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-link active" onclick="showTab('overview',this)"><span>🏠</span> Overview</button>
+      <button class="sidebar-link" onclick="showTab('applications',this)"><span>📋</span> My Applications</button>
+      <button class="sidebar-link" onclick="showTab('certificates',this)"><span>🏅</span> Certificates</button>
+      <a href="/internships" class="sidebar-link"><span>🔍</span> Browse Internships</a>
+      <a href="/verify" class="sidebar-link"><span>✅</span> Verify Certificate</a>
+    </nav>
+  </div>
+
+  <!-- MAIN -->
+  <div class="dash-content">
+    <div class="dash-header">
+      <h1>Welcome back, {{ user.name.split()[0] }} 👋</h1>
+      <p>Track your internships, download certificates, and manage your profile.</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--rust-pale2)">📋</div>
+        <div class="stat-info"><div class="n">{{ applications|length }}</div><div class="l">Applications</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(107,124,96,.1)">🏅</div>
+        <div class="stat-info"><div class="n">{{ certificates|length }}</div><div class="l">Certificates</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(198,139,58,.1)">⭐</div>
+        <div class="stat-info">
+          <div class="n">{% if applications %}{{ (applications|selectattr('score','gt',0)|list|map(attribute='score')|sum / [applications|selectattr('score','gt',0)|list|length,1]|max)|round|int }}%{% else %}—{% endif %}</div>
+          <div class="l">Avg Score</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-section active" id="tab-overview">
+      <div class="section-card">
+        <h2>Recent Activity</h2>
+        {% if applications %}
+          {% for app in applications[:3] %}
+          <div class="app-item">
+            <div class="app-info">
+              <h4>{{ app.title }}</h4>
+              <p>Applied {{ app.applied_at[:10] }} · Start: {{ app.start_date }}</p>
+            </div>
+            <div class="app-right">
+              <span class="badge badge-{{ app.status }}">{{ app.status|title }}</span>
+              {% if app.score > 0 %}<div class="score" style="margin-top:6px">{{ app.score }}/100</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="emoji">📭</div>
+            <p>No applications yet. Start your journey!</p>
+            <a href="/internships" class="btn btn-rust btn-md">Browse Internships →</a>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if certificates %}
+      <div class="section-card">
+        <h2>Your Certificates</h2>
+        {% for cert in certificates %}
+        <div class="cert-item">
+          <div class="cert-info">
+            <h4>{{ cert.title }}</h4>
+            <p>{{ cert.cert_id }}</p>
+          </div>
+          <div class="cert-actions">
+            <a href="/verify?id={{ cert.cert_id }}" target="_blank" class="cert-btn cert-btn-outline">Verify</a>
+            <button class="cert-btn cert-btn-gold" onclick="toast('Download feature coming soon!','success')">Download</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- APPLICATIONS TAB -->
+    <div class="tab-section" id="tab-applications">
+      <div class="section-card">
+        <h2>All Applications ({{ applications|length }})</h2>
+        {% if applications %}
+          {% for app in applications %}
+          <div class="app-item">
+            <div class="app-info">
+              <h4>{{ app.title }}</h4>
+              <p>{{ app.difficulty }} · {{ app.duration_weeks }} weeks · Applied {{ app.applied_at[:10] }}</p>
+              {% if app.start_date %}<p style="margin-top:2px">📅 {{ app.start_date }} → {{ app.end_date }}</p>{% endif %}
+            </div>
+            <div class="app-right">
+              <span class="badge badge-{{ app.status }}">{{ app.status|title }}</span>
+              {% if app.score > 0 %}<div class="score" style="margin-top:8px">{{ app.score }}/100</div><div class="date">Score</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="emoji">🔍</div>
+            <p>No applications yet. Find an internship to apply for!</p>
+            <a href="/internships" class="btn btn-rust btn-md">Browse Internships →</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- CERTIFICATES TAB -->
+    <div class="tab-section" id="tab-certificates">
+      <div class="section-card">
+        <h2>My Certificates ({{ certificates|length }})</h2>
+        {% if certificates %}
+          {% for cert in certificates %}
+          <div class="cert-item">
+            <div class="cert-info">
+              <h4>{{ cert.title }}</h4>
+              <p>{{ cert.cert_id }} · Issued {{ cert.issued_at[:10] }}</p>
+            </div>
+            <div class="cert-actions">
+              <a href="/verify?id={{ cert.cert_id }}" target="_blank" class="cert-btn cert-btn-outline">Verify</a>
+              <button class="cert-btn cert-btn-gold" onclick="toast('Download feature coming soon!','success')">PDF</button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="emoji">🏅</div>
+            <p>No certificates yet. Complete an internship to earn one!</p>
+            <a href="/internships" class="btn btn-rust btn-md">Start an Internship →</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function showTab(name, btn){
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

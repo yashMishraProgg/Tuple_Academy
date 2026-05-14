@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Verify Certificate — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.page-hero{background:var(--bark2);padding:72px 24px 52px;text-align:center;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23fff' fill-opacity='0.03'/%3E%3C/svg%3E")}
+.page-hero h1{font-family:'Lora',serif;font-size:clamp(26px,4vw,42px);font-weight:700;color:#fff;margin-bottom:10px;position:relative;z-index:1;letter-spacing:-.6px}
+.page-hero p{font-size:15px;color:var(--sand);position:relative;z-index:1}
+.verify-wrap{max-width:680px;margin:0 auto;padding:52px 24px}
+.search-card{background:var(--warm-white);border:1.5px solid var(--border2);border-radius:16px;padding:32px;margin-bottom:28px;box-shadow:var(--shadow)}
+.search-card h2{font-family:'Lora',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.search-card p{font-size:14px;color:var(--muted);margin-bottom:22px}
+.search-row{display:flex;gap:10px}
+.search-row .form-input{flex:1}
+.cert-result{background:linear-gradient(135deg,#fdf8f2 0%,#f7ead8 100%);border:2px solid var(--gold);border-radius:16px;padding:40px;position:relative;text-align:center}
+.cert-result::before{content:'';position:absolute;top:8px;left:8px;right:8px;bottom:8px;border:1px solid rgba(198,139,58,.25);border-radius:10px;pointer-events:none}
+.cr-verified-badge{display:inline-flex;align-items:center;gap:6px;background:var(--sage);color:#fff;font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.3px}
+.cr-lines{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:16px}
+.cr-line{height:1px;width:60px;background:rgba(198,139,58,.3)}
+.cr-diamond{width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
+.cr-org{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.cr-title{font-family:'Lora',serif;font-size:22px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.cr-certify{font-size:13px;color:var(--muted);margin-bottom:10px}
+.cr-name{font-family:'Lora',serif;font-size:26px;font-style:italic;font-weight:600;color:var(--rust);border-bottom:1px solid rgba(198,139,58,.35);padding-bottom:10px;margin-bottom:12px;display:inline-block}
+.cr-domain{font-size:15px;font-weight:600;color:var(--bark-mid);margin-bottom:6px}
+.cr-period{font-size:12.5px;color:var(--muted);margin-bottom:24px}
+.cr-footer{display:flex;justify-content:space-around;border-top:1px solid rgba(198,139,58,.25);padding-top:20px}
+.cr-footer-item .f-label{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.cr-footer-item .f-val{font-size:11.5px;font-weight:600;color:var(--bark-mid);font-family:'DM Mono',monospace}
+.not-found{background:var(--warm-white);border:2px solid rgba(200,50,50,.2);border-radius:14px;padding:40px;text-align:center}
+.not-found .emoji{font-size:48px;margin-bottom:14px}
+.not-found h3{font-size:18px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.not-found p{font-size:14px;color:var(--muted)}
+.how-verify{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:28px}
+.how-verify h3{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px}
+.hv-list{display:flex;flex-direction:column;gap:10px}
+.hv-item{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:var(--muted)}
+.hv-num{width:22px;height:22px;border-radius:50%;background:var(--rust-pale2);color:var(--rust);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <h1>Verify Certificate</h1>
+  <p>Enter a certificate ID to verify its authenticity instantly.</p>
+</div>
+
+<div class="verify-wrap">
+  <div class="search-card reveal">
+    <h2>🔍 Certificate Verification</h2>
+    <p>Enter the certificate ID (e.g. <code style="font-family:'DM Mono',monospace;background:var(--cream2);padding:2px 6px;border-radius:4px">TA-2025-WE-0001</code>) to verify instantly.</p>
+    <div class="search-row">
+      <input type="text" class="form-input" id="certInput" placeholder="TA-2025-XX-0000" value="{{ cert_id }}" onkeydown="if(event.key==='Enter')verify()">
+      <button class="btn btn-rust btn-md" onclick="verify()">Verify →</button>
+    </div>
+  </div>
+
+  {% if cert_id %}
+    {% if cert %}
+    <div class="cert-result reveal">
+      <div class="cr-verified-badge">✓ Verified &amp; Authentic</div>
+      <div class="cr-lines"><div class="cr-line"></div><div class="cr-diamond"></div><div class="cr-line"></div></div>
+      <div class="cr-org">Tuple Academy — Verified Internship Program</div>
+      <div class="cr-title">Certificate of Completion</div>
+      <div class="cr-certify">This is to certify that</div>
+      <div class="cr-name">{{ cert.student_name }}</div>
+      <div class="cr-certify">has successfully completed the</div>
+      <div class="cr-domain">{{ cert.internship_title }}</div>
+      <div class="cr-period">{{ cert.start_date }} → {{ cert.end_date }} &nbsp;·&nbsp; Score: {{ cert.score }}/100</div>
+      <div class="cr-footer">
+        <div class="cr-footer-item"><div class="f-label">Certificate ID</div><div class="f-val">{{ cert.cert_id }}</div></div>
+        <div class="cr-footer-item"><div class="f-label">Issued On</div><div class="f-val">{{ cert.issued_at[:10] }}</div></div>
+        <div class="cr-footer-item"><div class="f-label">Issued By</div><div class="f-val" style="font-family:'Lora',serif;font-style:italic;color:var(--rust)">Tuple Academy</div></div>
+      </div>
+    </div>
+    {% else %}
+    <div class="not-found reveal">
+      <div class="emoji">❌</div>
+      <h3>Certificate Not Found</h3>
+      <p>No certificate with ID "<strong>{{ cert_id }}</strong>" was found in our records. Please check the ID and try again.</p>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="how-verify reveal">
+    <h3>How Certificate Verification Works</h3>
+    <div class="hv-list">
+      <div class="hv-item"><div class="hv-num">1</div>Every Tuple Academy certificate has a unique ID (format: TA-YEAR-CODE-SEQUENCE) printed on it.</div>
+      <div class="hv-item"><div class="hv-num">2</div>Enter the certificate ID in the box above and click Verify to check it against our permanent database.</div>
+      <div class="hv-item"><div class="hv-num">3</div>Verified certificates show the student name, internship title, score, and issue date. Records are permanent and never deleted.</div>
+      <div class="hv-item"><div class="hv-num">4</div>Certificates also carry a QR code that links directly to this verification page for quick scanning by recruiters.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function verify(){
+  const id=document.getElementById('certInput').value.trim();
+  if(!id){toast('Enter a certificate ID','error');return;}
+  window.location.href='/verify?id='+encodeURIComponent(id);
+}
+</script>
+{% endblock %}

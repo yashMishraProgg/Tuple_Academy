@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{{ intern.title }} — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.page-hero{background:var(--bark2);padding:80px 24px 56px;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23fff' fill-opacity='0.03'/%3E%3C/svg%3E")}
+.ph-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.ph-breadcrumb{font-size:13px;color:var(--sand);margin-bottom:16px}
+.ph-breadcrumb a{color:var(--sand);opacity:.7;transition:.18s}
+.ph-breadcrumb a:hover{opacity:1;color:var(--rust-pale)}
+.ph-title{font-family:'Lora',serif;font-size:clamp(28px,4vw,46px);font-weight:700;color:#fff;letter-spacing:-.8px;margin-bottom:16px}
+.ph-meta{display:flex;gap:16px;flex-wrap:wrap}
+.ph-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:var(--sand);font-size:13px;padding:6px 14px;border-radius:20px}
+
+.detail-grid{display:grid;grid-template-columns:1fr 340px;gap:36px;max-width:1100px;margin:0 auto;padding:48px 24px}
+.detail-main{}
+.detail-section{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:20px}
+.detail-section h2{font-family:'Lora',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.detail-section p{font-size:14.5px;color:var(--body);line-height:1.75}
+.skills-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.skill-tag{font-size:12.5px;font-weight:500;color:var(--bark-mid);background:var(--cream2);border:1px solid var(--border2);padding:4px 12px;border-radius:6px}
+.week-list{display:flex;flex-direction:column;gap:0}
+.week-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.week-item:last-child{border-bottom:none}
+.week-num{width:36px;height:36px;background:var(--rust-pale2);border:1.5px solid rgba(193,75,40,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-size:13px;font-weight:700;color:var(--rust);flex-shrink:0;margin-top:2px}
+.week-content h4{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.week-content p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* sidebar */
+.detail-side{}
+.apply-card{background:var(--warm-white);border:1.5px solid var(--border2);border-radius:16px;padding:28px;position:sticky;top:84px}
+.apply-card h3{font-family:'Lora',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.apply-card .price-note{font-size:13px;color:var(--muted);margin-bottom:20px}
+.apply-meta-list{display:flex;flex-direction:column;gap:10px;margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.aml-item{display:flex;align-items:center;justify-content:space-between;font-size:13.5px}
+.aml-label{color:var(--muted)}
+.aml-value{font-weight:600;color:var(--ink)}
+.already-box{background:var(--rust-pale2);border:1px solid rgba(193,75,40,.2);border-radius:10px;padding:16px;text-align:center}
+.already-box p{font-size:13.5px;color:var(--rust);font-weight:500}
+.already-box a{font-size:13px;color:var(--rust);font-weight:600;text-decoration:underline;margin-top:6px;display:inline-block}
+
+@media(max-width:900px){
+  .detail-grid{grid-template-columns:1fr;padding:28px 16px}
+  .apply-card{position:static}
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="page-hero">
+  <div class="ph-inner">
+    <div class="ph-breadcrumb"><a href="/">Home</a> › <a href="/internships">Internships</a> › {{ intern.title }}</div>
+    <h1 class="ph-title">{{ intern.title }}</h1>
+    <div class="ph-meta">
+      <div class="ph-tag">📅 {{ intern.duration_weeks }} Weeks</div>
+      <div class="ph-tag">📊 {{ intern.difficulty }}</div>
+      <div class="ph-tag">👥 {{ intern.enrolled }}+ enrolled</div>
+      <div class="ph-tag">✅ Certificate Included</div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <div class="detail-section reveal">
+      <h2>About This Internship</h2>
+      <p>{{ intern.description }}</p>
+    </div>
+
+    {% if intern.skills %}
+    <div class="detail-section reveal">
+      <h2>Skills You'll Learn</h2>
+      <div class="skills-wrap">
+        {% for s in intern.skills.split(',') %}
+        <span class="skill-tag">{{ s.strip() }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="detail-section reveal">
+      <h2>Weekly Task Structure</h2>
+      <div class="week-list">
+        <div class="week-item">
+          <div class="week-num">W1</div>
+          <div class="week-content"><h4>Foundation & Theory</h4><p>Understand core concepts of your domain. Complete a beginner-level hands-on exercise to apply what you've learned. Submit a short summary.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num">W2</div>
+          <div class="week-content"><h4>Applied Practice</h4><p>Work on a real applied task — code, design, or analysis — that simulates actual industry requirements. Submit to GitHub or the dashboard.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num">W3</div>
+          <div class="week-content"><h4>Real-World Project</h4><p>Build a complete mini-project from a real-world brief. Document your process, decisions, and outcomes professionally.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num">W4</div>
+          <div class="week-content"><h4>Final Delivery & Review</h4><p>Submit your final project with full documentation. Mentor reviews and grades your work. Score 60%+ to earn your certificate.</p></div>
+        </div>
+        {% if intern.duration_weeks > 4 %}
+        <div class="week-item">
+          <div class="week-num">W5+</div>
+          <div class="week-content"><h4>Advanced Modules</h4><p>Extended internships include 1–2 additional advanced modules covering deeper skills and a more complex capstone project.</p></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <h2>Evaluation Criteria</h2>
+      <div class="week-list">
+        <div class="week-item">
+          <div class="week-num" style="background:rgba(107,124,96,.12);border-color:rgba(107,124,96,.3);color:var(--sage)">40%</div>
+          <div class="week-content"><h4>Task Completion</h4><p>Did you attempt and submit all assigned tasks? Partial credit given for honest incomplete submissions with explanations.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num" style="background:var(--rust-pale2);border-color:rgba(193,75,40,.25);color:var(--rust)">30%</div>
+          <div class="week-content"><h4>Quality of Work</h4><p>Graded on a rubric: code cleanliness / design quality / writing clarity depending on domain. Mentor provides specific comments.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num" style="background:rgba(198,139,58,.1);border-color:rgba(198,139,58,.3);color:#8a5e1a">20%</div>
+          <div class="week-content"><h4>On-Time Submission</h4><p>Submitted before deadline = full marks. 1 day late = –5%. More than 3 days late = 0 for that task.</p></div>
+        </div>
+        <div class="week-item">
+          <div class="week-num" style="background:var(--cream2);border-color:var(--border2);color:var(--bark-mid)">10%</div>
+          <div class="week-content"><h4>Mentor Assessment</h4><p>Mentor's holistic assessment of your professionalism, effort, and communication during the internship period.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section reveal">
+      <h2>What You'll Receive</h2>
+      <div class="week-list">
+        <div class="week-item"><div class="week-num" style="font-size:18px;border:none;background:none">📄</div><div class="week-content"><h4>Offer Letter</h4><p>Sent before the internship starts. Includes start date, role, and your mentor details.</p></div></div>
+        <div class="week-item"><div class="week-num" style="font-size:18px;border:none;background:none">🏅</div><div class="week-content"><h4>Completion Certificate</h4><p>QR-verified PDF certificate with unique ID. Permanently verifiable at verify.tupleacademy.in.</p></div></div>
+        <div class="week-item"><div class="week-num" style="font-size:18px;border:none;background:none">🔗</div><div class="week-content"><h4>LinkedIn Badge</h4><p>Share your certificate directly to LinkedIn. Boosts your profile credibility with recruiters.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="detail-side">
+    <div class="apply-card reveal">
+      {% if already %}
+        <div class="already-box">
+          <p>✅ You've already applied for this internship!</p>
+          <a href="/dashboard">View in Dashboard →</a>
+        </div>
+      {% else %}
+        <h3>Apply Now</h3>
+        <p class="price-note">Free to apply · Offer letter in 48 hrs</p>
+        <div class="apply-meta-list">
+          <div class="aml-item"><span class="aml-label">Duration</span><span class="aml-value">{{ intern.duration_weeks }} Weeks</span></div>
+          <div class="aml-item"><span class="aml-label">Difficulty</span><span class="aml-value">{{ intern.difficulty }}</span></div>
+          <div class="aml-item"><span class="aml-label">Format</span><span class="aml-value">Virtual / Remote</span></div>
+          <div class="aml-item"><span class="aml-label">Certificate</span><span class="aml-value" style="color:var(--sage)">✓ Included</span></div>
+          <div class="aml-item"><span class="aml-label">Enrolled</span><span class="aml-value">{{ intern.enrolled }}+ students</span></div>
+        </div>
+        <button class="btn btn-rust btn-lg" style="width:100%;justify-content:center" onclick="openApply()">Apply for Free →</button>
+        <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">🔒 No payment needed to start</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="applyModal" onclick="if(event.target===this)closeApply()">
+<div class="modal-box">
+  <button class="modal-close" onclick="closeApply()">✕</button>
+  <h3 style="font-family:'Lora',serif;font-size:21px;font-weight:700;color:var(--ink);margin-bottom:6px">Apply for {{ intern.title }}</h3>
+  <p style="font-size:13.5px;color:var(--muted);margin-bottom:22px">{{ intern.duration_weeks }}-week internship · Offer letter in 48 hrs</p>
+  <form id="applyForm" onsubmit="doApply(event)">
+    <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" name="name" required placeholder="Your full name"></div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" type="email" name="email" required placeholder="you@email.com"></div>
+    <div class="form-group"><label class="form-label">College</label><input class="form-input" name="college" placeholder="Your college name"></div>
+    <div class="form-group"><label class="form-label">Stream</label><input class="form-input" name="stream" placeholder="CSE / BCA / BBA etc."></div>
+    <div class="form-group"><label class="form-label">Why this internship? (optional)</label><textarea class="form-input" name="motivation" rows="2" style="resize:vertical" placeholder="In a few words…"></textarea></div>
+    <button type="submit" class="btn btn-rust btn-lg" style="width:100%;justify-content:center;margin-top:8px">Submit Application →</button>
+  </form>
+  <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">🔒 Free to apply. No payment required.</p>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function openApply(){document.getElementById('applyModal').classList.add('open');document.body.style.overflow='hidden'}
+function closeApply(){document.getElementById('applyModal').classList.remove('open');document.body.style.overflow=''}
+function doApply(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Submitting…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  data.internship_id='{{ intern.id }}';
+  fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast(d.message,'success');closeApply();setTimeout(()=>location.href=d.redirect,900);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Submit Application →';}
+    }).catch(()=>{toast('Network error','error');btn.disabled=false;btn.textContent='Submit Application →';});
+}
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Register — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.auth-wrap{min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--cream)}
+.auth-card{background:var(--warm-white);border:1.5px solid var(--border2);border-radius:20px;padding:44px 40px;width:100%;max-width:500px;box-shadow:var(--shadow2)}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px}
+.auth-logo svg{width:28px;height:28px}
+.auth-logo span{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--bark)}
+.auth-logo span em{color:var(--rust);font-style:normal}
+.auth-title{font-family:'Lora',serif;font-size:24px;font-weight:700;color:var(--ink);margin-bottom:6px;text-align:center}
+.auth-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:26px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-footer{text-align:center;margin-top:18px;font-size:14px;color:var(--muted)}
+.auth-footer a{color:var(--rust);font-weight:600}
+.perks{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;padding:14px 16px;background:var(--cream2);border-radius:10px;border:1px solid var(--border)}
+.perk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--body)}
+.perk-icon{font-size:14px}
+@media(max-width:500px){.auth-card{padding:28px 18px}.form-row{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 28 28" fill="none"><rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/><rect x="17.5" y="17.5" width="9" height="9" rx="2" stroke="#C14B28" stroke-width="2" fill="none"/><path d="M6 10.5 L6 22 L17.5 22" stroke="#C14B28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Tuple <em>Academy</em></span>
+    </div>
+    <h1 class="auth-title">Create Your Account</h1>
+    <p class="auth-sub">Start your internship journey — free</p>
+
+    <div class="perks">
+      <div class="perk"><div class="perk-icon">✅</div>Access 18+ internship domains</div>
+      <div class="perk"><div class="perk-icon">🏅</div>Earn verified certificates</div>
+      <div class="perk"><div class="perk-icon">📁</div>Build a real portfolio</div>
+    </div>
+
+    <form id="regForm" onsubmit="doRegister(event)">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" name="name" required placeholder="Priya Sharma" autocomplete="name"></div>
+        <div class="form-group"><label class="form-label">Email *</label><input class="form-input" type="email" name="email" required placeholder="you@email.com" autocomplete="email"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">College</label><input class="form-input" name="college" placeholder="Delhi University"></div>
+        <div class="form-group"><label class="form-label">Stream</label><input class="form-input" name="stream" placeholder="CSE / BBA / etc."></div>
+      </div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" name="phone" placeholder="+91 9876543210" autocomplete="tel"></div>
+      <div class="form-group">
+        <label class="form-label">Password * <span style="font-weight:400;color:var(--muted)">(min 6 characters)</span></label>
+        <input class="form-input" type="password" name="password" required placeholder="Create a password" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-rust btn-lg" style="width:100%;justify-content:center;margin-top:10px" id="regBtn">
+        Create Account →
+      </button>
+    </form>
+    <div class="auth-footer">
+      Already have an account? <a href="/login">Log in →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function doRegister(e){
+  e.preventDefault();
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true;btn.textContent='Creating account…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Account created!','success');setTimeout(()=>location.href=d.redirect,700);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Create Account →';}
+    }).catch(()=>{toast('Network error','error');btn.disabled=false;btn.textContent='Create Account →';});
+}
+</script>
+{% endblock %}

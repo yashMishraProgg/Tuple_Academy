@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — Tuple Academy{% endblock %}
+{% block extra_head %}
+<style>
+.admin-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 64px)}
+.admin-sidebar{background:var(--bark);padding:24px 14px;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto}
+.admin-sidebar-title{font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--sand);opacity:.6;margin-bottom:14px;padding:0 10px}
+.admin-nav{display:flex;flex-direction:column;gap:2px}
+.admin-link{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--sand);cursor:pointer;transition:.18s;border:none;background:none;width:100%;text-align:left}
+.admin-link:hover,.admin-link.active{background:rgba(255,255,255,.08);color:#fff}
+.admin-link span{font-size:15px}
+.admin-content{padding:32px;background:var(--cream)}
+.admin-header{margin-bottom:28px}
+.admin-header h1{font-family:'Lora',serif;font-size:24px;font-weight:700;color:var(--ink)}
+.admin-header p{font-size:13.5px;color:var(--muted);margin-top:3px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--warm-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.stat-card .n{font-family:'Lora',serif;font-size:28px;font-weight:700;color:var(--ink);line-height:1;margin-bottom:4px}
+.stat-card .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat-card .icon{font-size:22px;margin-bottom:8px}
+.tab-section{display:none}
+.tab-section.active{display:block}
+.admin-table-wrap{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.admin-table-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.admin-table-header h3{font-size:16px;font-weight:600;color:var(--ink)}
+.search-box{background:var(--cream2);border:1.5px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;width:220px;transition:border-color .18s}
+.search-box:focus{border-color:var(--rust)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--cream2);padding:10px 14px;text-align:left;font-weight:600;font-size:11.5px;color:var(--bark-mid);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--body);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--cream2)}
+.tbl-btn{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;border:none;transition:.18s;display:inline-block}
+.tbl-btn-rust{background:var(--rust);color:#fff}
+.tbl-btn-rust:hover{background:var(--rust-h)}
+.tbl-btn-outline{background:none;color:var(--rust);border:1.5px solid rgba(193,75,40,.3)}
+.tbl-btn-outline:hover{background:var(--rust);color:#fff}
+.tbl-btn-sage{background:rgba(107,124,96,.15);color:var(--sage)}
+.tbl-btn-sage:hover{background:var(--sage);color:#fff}
+.tbl-btn-red{background:rgba(200,50,50,.1);color:#c83232}
+.tbl-btn-red:hover{background:#c83232;color:#fff}
+.action-group{display:flex;gap:5px;flex-wrap:wrap}
+.score-input{width:60px;padding:4px 8px;border:1.5px solid var(--border2);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream2);outline:none}
+.score-input:focus{border-color:var(--rust)}
+.no-data{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.add-form{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.add-form h3{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:18px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+@media(max-width:1024px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .admin-layout{grid-template-columns:1fr}
+  .admin-sidebar{position:static;height:auto;padding:14px}
+  .admin-nav{flex-direction:row;overflow-x:auto;gap:4px}
+  .admin-link{white-space:nowrap;padding:7px 12px}
+  .admin-content{padding:16px}
+  table{display:block;overflow-x:auto}
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="admin-layout">
+  <div class="admin-sidebar">
+    <div class="admin-sidebar-title">Admin Panel</div>
+    <nav class="admin-nav">
+      <button class="admin-link active" onclick="showTab('overview',this)"><span>📊</span>Overview</button>
+      <button class="admin-link" onclick="showTab('applications',this)"><span>📋</span>Applications</button>
+      <button class="admin-link" onclick="showTab('internships',this)"><span>🎓</span>Internships</button>
+      <button class="admin-link" onclick="showTab('users',this)"><span>👥</span>Users</button>
+      <button class="admin-link" onclick="showTab('certificates',this)"><span>🏅</span>Certificates</button>
+      <button class="admin-link" onclick="showTab('contacts',this)"><span>📩</span>Messages</button>
+    </nav>
+  </div>
+
+  <div class="admin-content">
+    <div class="admin-header">
+      <h1>Admin Dashboard</h1>
+      <p>Manage applications, internships, users and certificates.</p>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="icon">👥</div><div class="n">{{ stats.total_users }}</div><div class="l">Total Students</div></div>
+      <div class="stat-card"><div class="icon">📋</div><div class="n">{{ stats.total_apps }}</div><div class="l">Applications</div></div>
+      <div class="stat-card"><div class="icon">⏳</div><div class="n">{{ stats.pending }}</div><div class="l">Pending Review</div></div>
+      <div class="stat-card"><div class="icon">🏅</div><div class="n">{{ stats.total_certs }}</div><div class="l">Certificates</div></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="tab-section active" id="tab-overview">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header"><h3>Recent Applications</h3></div>
+        {% if applications %}
+        <table>
+          <thead><tr><th>Student</th><th>Internship</th><th>Status</th><th>Score</th><th>Applied</th><th>Actions</th></tr></thead>
+          <tbody>
+          {% for app in applications[:10] %}
+          <tr>
+            <td><strong>{{ app.student_name }}</strong><br><span style="color:var(--muted);font-size:11.5px">{{ app.student_email }}</span></td>
+            <td>{{ app.intern_title }}</td>
+            <td><span class="badge badge-{{ app.status }}">{{ app.status|title }}</span></td>
+            <td>{% if app.score %}{{ app.score }}/100{% else %}—{% endif %}</td>
+            <td>{{ app.applied_at[:10] }}</td>
+            <td>
+              <div class="action-group">
+                <input type="number" class="score-input" id="score_{{ app.id }}" min="0" max="100" placeholder="Score" value="{{ app.score or '' }}">
+                <button class="tbl-btn tbl-btn-rust" onclick="updateApp('{{ app.id }}')">Save</button>
+                <button class="tbl-btn tbl-btn-sage" onclick="issueCert('{{ app.id }}')">Cert</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<div class="no-data">No applications yet.</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="tab-section" id="tab-applications">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h3>All Applications ({{ applications|length }})</h3>
+          <input type="text" class="search-box" placeholder="Search student…" oninput="searchTable(this,'appTable')">
+        </div>
+        {% if applications %}
+        <table id="appTable">
+          <thead><tr><th>Student</th><th>Email</th><th>Internship</th><th>Status</th><th>Score</th><th>Applied</th><th>Actions</th></tr></thead>
+          <tbody>
+          {% for app in applications %}
+          <tr>
+            <td><strong>{{ app.student_name }}</strong></td>
+            <td>{{ app.student_email }}</td>
+            <td>{{ app.intern_title }}</td>
+            <td><span class="badge badge-{{ app.status }}">{{ app.status|title }}</span></td>
+            <td>{% if app.score %}{{ app.score }}/100{% else %}—{% endif %}</td>
+            <td>{{ app.applied_at[:10] }}</td>
+            <td>
+              <div class="action-group">
+                <input type="number" class="score-input" id="ascore_{{ app.id }}" min="0" max="100" placeholder="0-100" value="{{ app.score or '' }}">
+                <button class="tbl-btn tbl-btn-rust" onclick="updateApp('{{ app.id }}','ascore_')">Save</button>
+                <button class="tbl-btn tbl-btn-sage" onclick="issueCert('{{ app.id }}')">Issue Cert</button>
+                <button class="tbl-btn tbl-btn-red" onclick="rejectApp('{{ app.id }}')">Reject</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<div class="no-data">No applications yet.</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- INTERNSHIPS -->
+    <div class="tab-section" id="tab-internships">
+      <div class="add-form">
+        <h3>➕ Add New Internship</h3>
+        <form id="addInternForm" onsubmit="addInternship(event)">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Title *</label><input class="form-input" name="title" required placeholder="e.g. Web Development"></div>
+            <div class="form-group"><label class="form-label">Category *</label>
+              <select class="form-input" name="category">
+                <option value="tech">Tech & Dev</option>
+                <option value="design">Design</option>
+                <option value="marketing">Marketing</option>
+                <option value="business">Business</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Description *</label><textarea class="form-input" name="description" rows="2" style="resize:vertical" required></textarea></div>
+          <div class="form-grid-3">
+            <div class="form-group"><label class="form-label">Duration (weeks)</label><input class="form-input" name="duration_weeks" type="number" value="4" min="1" max="12"></div>
+            <div class="form-group"><label class="form-label">Difficulty</label>
+              <select class="form-input" name="difficulty">
+                <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Skills (comma-separated)</label><input class="form-input" name="skills" placeholder="Python, SQL, Excel"></div>
+          </div>
+          <button type="submit" class="btn btn-rust btn-md">Add Internship</button>
+        </form>
+      </div>
+
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h3>All Internships ({{ internships|length }})</h3>
+          <input type="text" class="search-box" placeholder="Search…" oninput="searchTable(this,'internTable')">
+        </div>
+        <table id="internTable">
+          <thead><tr><th>Title</th><th>Category</th><th>Duration</th><th>Difficulty</th><th>Enrolled</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+          {% for i in internships %}
+          <tr>
+            <td><strong>{{ i.title }}</strong></td>
+            <td>{{ i.category|title }}</td>
+            <td>{{ i.duration_weeks }}w</td>
+            <td><span class="badge badge-{{ i.difficulty|lower }}">{{ i.difficulty }}</span></td>
+            <td>{{ i.enrolled }}</td>
+            <td><span class="badge" style="{% if i.is_active %}background:rgba(107,124,96,.12);color:var(--sage){% else %}background:rgba(200,50,50,.1);color:#c83232{% endif %}">{{ 'Active' if i.is_active else 'Inactive' }}</span></td>
+            <td>
+              {% if i.is_active %}
+              <button class="tbl-btn tbl-btn-red" onclick="deleteInternship('{{ i.id }}',this)">Deactivate</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-section" id="tab-users">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h3>All Users ({{ users|length }})</h3>
+          <input type="text" class="search-box" placeholder="Search user…" oninput="searchTable(this,'userTable')">
+        </div>
+        <table id="userTable">
+          <thead><tr><th>Name</th><th>Email</th><th>College</th><th>Stream</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody>
+          {% for u in users %}
+          <tr>
+            <td><strong>{{ u.name }}</strong></td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.college or '—' }}</td>
+            <td>{{ u.stream or '—' }}</td>
+            <td><span class="badge {% if u.role=='admin' %}badge-advanced{% else %}badge-accepted{% endif %}">{{ u.role|title }}</span></td>
+            <td><span class="badge" style="{% if u.is_active %}background:rgba(107,124,96,.12);color:var(--sage){% else %}background:rgba(200,50,50,.1);color:#c83232{% endif %}">{{ 'Active' if u.is_active else 'Inactive' }}</span></td>
+            <td>{{ u.created_at[:10] }}</td>
+            <td>
+              {% if u.role != 'admin' %}
+              <button class="tbl-btn {% if u.is_active %}tbl-btn-red{% else %}tbl-btn-sage{% endif %}" onclick="toggleUser('{{ u.id }}',this)">{{ 'Disable' if u.is_active else 'Enable' }}</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CERTIFICATES -->
+    <div class="tab-section" id="tab-certificates">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h3>Issued Certificates ({{ certificates|length }})</h3>
+          <input type="text" class="search-box" placeholder="Search…" oninput="searchTable(this,'certTable')">
+        </div>
+        {% if certificates %}
+        <table id="certTable">
+          <thead><tr><th>Certificate ID</th><th>Student</th><th>Internship</th><th>Issued</th><th>Verify</th></tr></thead>
+          <tbody>
+          {% for c in certificates %}
+          <tr>
+            <td><code style="font-family:'DM Mono',monospace;font-size:12px;background:var(--cream2);padding:2px 7px;border-radius:4px">{{ c.cert_id }}</code></td>
+            <td>{{ c.name }}</td>
+            <td>{{ c.title }}</td>
+            <td>{{ c.issued_at[:10] }}</td>
+            <td><a href="/verify?id={{ c.cert_id }}" target="_blank" class="tbl-btn tbl-btn-sage">View</a></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<div class="no-data">No certificates issued yet.</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div class="tab-section" id="tab-contacts">
+      <div class="admin-table-wrap">
+        <div class="admin-table-header"><h3>Contact Messages ({{ contacts|length }})</h3></div>
+        {% if contacts %}
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Subject</th><th>Message</th><th>Received</th></tr></thead>
+          <tbody>
+          {% for c in contacts %}
+          <tr>
+            <td><strong>{{ c.name }}</strong></td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.phone or '—' }}</td>
+            <td>{{ c.subject or '—' }}</td>
+            <td style="max-width:260px">{{ c.message[:100] }}{% if c.message|length > 100 %}…{% endif %}</td>
+            <td>{{ c.created_at[:10] }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<div class="no-data">No messages yet.</div>{% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function showTab(name,btn){
+  document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.admin-link').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function updateApp(id, prefix='score_'){
+  const score=document.getElementById((prefix||'score_')+id).value;
+  if(!score){toast('Enter a score 0-100','error');return;}
+  fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({score:parseInt(score)})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Score saved! '+(parseInt(score)>=60?'Certificate auto-issued ✓':''),'success');
+        setTimeout(()=>location.reload(),900);}
+      else toast(d.error,'error');
+    });
+}
+
+function issueCert(id){
+  if(!confirm('Issue certificate for this application?')) return;
+  fetch('/api/admin/application/'+id+'/cert',{method:'POST'})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Certificate issued!','success');setTimeout(()=>location.reload(),800);}
+      else toast(d.error,'error');
+    });
+}
+
+function rejectApp(id){
+  if(!confirm('Reject this application?')) return;
+  fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:'rejected'})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Application rejected','success');setTimeout(()=>location.reload(),700);}
+    });
+}
+
+function addInternship(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Adding…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  fetch('/api/admin/internship',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Internship added!','success');setTimeout(()=>location.reload(),700);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Add Internship';}
+    });
+}
+
+function deleteInternship(id,btn){
+  if(!confirm('Deactivate this internship?')) return;
+  fetch('/api/admin/internship/'+id,{method:'DELETE'})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Internship deactivated','success');btn.closest('tr').style.opacity='.4';}
+    });
+}
+
+function toggleUser(id,btn){
+  fetch('/api/admin/user/'+id+'/toggle',{method:'POST'})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('User updated','success');setTimeout(()=>location.reload(),700);}
+    });
+}
+
+function searchTable(input,tableId){
+  const q=input.value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(row=>{
+    row.style.display=row.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+</script>
+{% endblock %}
