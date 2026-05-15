@@ -28,79 +28,55 @@ app.config["UPLOAD_FOLDER"] = os.path.join(_db_dir, "uploads")
 app.permanent_session_lifetime = timedelta(days=7)
 
 # ── DB ────────────────────────────────────────────────────────
-def get_db():
-    if "db" not in g:
-        g.db = sqlite3.connect(app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute("PRAGMA journal_mode=WAL")
-        g.db.execute("PRAGMA foreign_keys=ON")
-    return g.db
+# Track whether this process has already set up the schema
+_schema_created = False
 
-@app.teardown_appcontext
-def close_db(e=None):
-    db = g.pop("db", None)
-    if db: db.close()
-
-def qry(sql, p=(), one=False, commit=False):
-    db = get_db()
-    cur = db.execute(sql, p)
-    if commit:
-        db.commit()
-        return cur.lastrowid
-    return cur.fetchone() if one else cur.fetchall()
-
-def rows(sql, p=()):
-    return [dict(r) for r in qry(sql, p)]
-
-def row(sql, p=()):
-    r = qry(sql, p, one=True)
-    return dict(r) if r else None
-
-# ── SCHEMA ────────────────────────────────────────────────────
-def init_db():
-    # makedirs safely — /tmp already exists on Render
-    db_dir = os.path.dirname(app.config["DATABASE"])
-    if db_dir and db_dir != "/tmp":
-        os.makedirs(db_dir, exist_ok=True)
+def _ensure_schema(db):
+    """Create all tables + seed data if not already done in this process."""
+    global _schema_created
+    if _schema_created:
+        return
+    _schema_created = True
+    # Make upload dir
     try:
         os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     except OSError:
         pass
-    get_db().executescript("""
+    db.executescript("""
     CREATE TABLE IF NOT EXISTS users (
         id         TEXT PRIMARY KEY,
         name       TEXT NOT NULL,
         email      TEXT UNIQUE NOT NULL,
         password   TEXT NOT NULL,
-        college    TEXT DEFAULT '',
-        stream     TEXT DEFAULT '',
-        phone      TEXT DEFAULT '',
-        role       TEXT DEFAULT 'student',
+        college    TEXT DEFAULT \'\',
+        stream     TEXT DEFAULT \'\',
+        phone      TEXT DEFAULT \'\',
+        role       TEXT DEFAULT \'student\',
         is_active  INTEGER DEFAULT 1,
-        created_at TEXT DEFAULT (datetime('now'))
+        created_at TEXT DEFAULT (datetime(\'now\'))
     );
     CREATE TABLE IF NOT EXISTS internships (
         id             TEXT PRIMARY KEY,
         title          TEXT NOT NULL,
-        category       TEXT DEFAULT 'tech',
-        description    TEXT DEFAULT '',
+        category       TEXT DEFAULT \'tech\',
+        description    TEXT DEFAULT \'\',
         duration_weeks INTEGER DEFAULT 4,
-        difficulty     TEXT DEFAULT 'Beginner',
-        skills         TEXT DEFAULT '',
+        difficulty     TEXT DEFAULT \'Beginner\',
+        skills         TEXT DEFAULT \'\',
         is_active      INTEGER DEFAULT 1,
         enrolled       INTEGER DEFAULT 0,
-        created_at     TEXT DEFAULT (datetime('now'))
+        created_at     TEXT DEFAULT (datetime(\'now\'))
     );
     CREATE TABLE IF NOT EXISTS applications (
         id            TEXT PRIMARY KEY,
         user_id       TEXT NOT NULL,
         internship_id TEXT NOT NULL,
-        status        TEXT DEFAULT 'pending',
-        motivation    TEXT DEFAULT '',
-        start_date    TEXT DEFAULT '',
-        end_date      TEXT DEFAULT '',
+        status        TEXT DEFAULT \'pending\',
+        motivation    TEXT DEFAULT \'\',
+        start_date    TEXT DEFAULT \'\',
+        end_date      TEXT DEFAULT \'\',
         score         INTEGER DEFAULT 0,
-        applied_at    TEXT DEFAULT (datetime('now')),
+        applied_at    TEXT DEFAULT (datetime(\'now\')),
         UNIQUE(user_id, internship_id),
         FOREIGN KEY(user_id)       REFERENCES users(id),
         FOREIGN KEY(internship_id) REFERENCES internships(id)
@@ -110,7 +86,7 @@ def init_db():
         cert_id   TEXT UNIQUE NOT NULL,
         user_id   TEXT NOT NULL,
         app_id    TEXT NOT NULL,
-        issued_at TEXT DEFAULT (datetime('now')),
+        issued_at TEXT DEFAULT (datetime(\'now\')),
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(app_id)  REFERENCES applications(id)
     );
@@ -118,24 +94,29 @@ def init_db():
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
         name       TEXT NOT NULL,
         email      TEXT NOT NULL,
-        phone      TEXT DEFAULT '',
-        subject    TEXT DEFAULT '',
+        phone      TEXT DEFAULT \'\',
+        subject    TEXT DEFAULT \'\',
         message    TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now'))
+        created_at TEXT DEFAULT (datetime(\'now\'))
     );
     """)
-    get_db().commit()
-    _seed()
+    db.commit()
+    _seed(db)
 
-def _seed():
-    if not row("SELECT id FROM users WHERE email=?", ("admin@tupleacademy.in",)):
-        qry("INSERT INTO users(id,name,email,password,role) VALUES(?,?,?,?,?)",
-            (str(uuid.uuid4()), "Admin", "admin@tupleacademy.in", _hp("admin123"), "admin"), commit=True)
-    if not row("SELECT id FROM users WHERE email=?", ("student@example.com",)):
-        qry("INSERT INTO users(id,name,email,password,college,stream) VALUES(?,?,?,?,?,?)",
-            (str(uuid.uuid4()), "Priya Sharma", "student@example.com", _hp("student123"), "Delhi University", "CSE"), commit=True)
-    if not row("SELECT id FROM internships LIMIT 1"):
-        import random
+def _seed(db):
+    import random
+    # Admin
+    if not db.execute("SELECT id FROM users WHERE email=?", ("admin@tupleacademy.in",)).fetchone():
+        db.execute("INSERT INTO users(id,name,email,password,role) VALUES(?,?,?,?,?)",
+            (str(uuid.uuid4()), "Admin", "admin@tupleacademy.in", _hp("admin123"), "admin"))
+        db.commit()
+    # Demo student
+    if not db.execute("SELECT id FROM users WHERE email=?", ("student@example.com",)).fetchone():
+        db.execute("INSERT INTO users(id,name,email,password,college,stream) VALUES(?,?,?,?,?,?)",
+            (str(uuid.uuid4()), "Priya Sharma", "student@example.com", _hp("student123"), "Delhi University", "CSE"))
+        db.commit()
+    # Internships
+    if not db.execute("SELECT id FROM internships LIMIT 1").fetchone():
         programs = [
             ("Web Development","tech","Build real websites with HTML, CSS, JS & React. Deploy live projects.",4,"Beginner","HTML,CSS,JavaScript,React,Git",2400),
             ("AI / Machine Learning","tech","Python, Pandas, Scikit-learn. Build prediction models & Streamlit apps.",6,"Intermediate","Python,Pandas,Scikit-learn,TensorFlow",1800),
@@ -157,8 +138,47 @@ def _seed():
             ("Blockchain","tech","Ethereum, Solidity smart contracts, testnet deployment.",6,"Advanced","Solidity,Ethereum,Web3.js,Truffle",280),
         ]
         for p in programs:
-            qry("INSERT INTO internships(id,title,category,description,duration_weeks,difficulty,skills,enrolled) VALUES(?,?,?,?,?,?,?,?)",
-                (str(uuid.uuid4()), p[0], p[1], p[2], p[3], p[4], p[5], p[6]), commit=True)
+            db.execute("INSERT INTO internships(id,title,category,description,duration_weeks,difficulty,skills,enrolled) VALUES(?,?,?,?,?,?,?,?)",
+                (str(uuid.uuid4()), p[0], p[1], p[2], p[3], p[4], p[5], p[6]))
+        db.commit()
+
+def get_db():
+    if "db" not in g:
+        db_path = app.config["DATABASE"]
+        # Ensure parent dir exists (safe for both /tmp and instance/)
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+            except OSError:
+                pass
+        g.db = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
+        g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA journal_mode=WAL")
+        g.db.execute("PRAGMA foreign_keys=ON")
+        # Always ensure schema exists — safe to call every new connection
+        _ensure_schema(g.db)
+    return g.db
+
+@app.teardown_appcontext
+def close_db(e=None):
+    db = g.pop("db", None)
+    if db: db.close()
+
+def qry(sql, p=(), one=False, commit=False):
+    db = get_db()
+    cur = db.execute(sql, p)
+    if commit:
+        db.commit()
+        return cur.lastrowid
+    return cur.fetchone() if one else cur.fetchall()
+
+def rows(sql, p=()):
+    return [dict(r) for r in qry(sql, p)]
+
+def row(sql, p=()):
+    r = qry(sql, p, one=True)
+    return dict(r) if r else None
 
 def _hp(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
