@@ -461,6 +461,7 @@ def admin_toggle_user(uid):
 if __name__ == "__main__":
     with app.app_context():
         init_db()
+        get_db()
     print("\n  ✦  Tuple Academy → http://localhost:5000")
     print("  ✦  Admin:   admin@tupleacademy.in  /  admin123")
     print("  ✦  Student: student@example.com    /  student123\n")
