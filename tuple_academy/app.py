@@ -1,7 +1,8 @@
 """
 Tuple Academy — Flask Backend
-Complete backend: auth, internships, applications, admin panel.
-Run: python app.py
+Deployment: AWS Lightsail + Ubuntu + Gunicorn + Caddy
+Run locally:  python app.py
+Run prod:     gunicorn --workers 3 --bind 127.0.0.1:8000 app:app
 """
 import sqlite3, hashlib, uuid, os, secrets
 from datetime import datetime, timedelta
@@ -12,12 +13,15 @@ from flask import (
 )
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "tuple-academy-dev-secret-2025")
 
-# ── DATABASE PATH ─────────────────────────────────────────────
-# On Render (and most cloud hosts) the project directory is read-only.
-# We use /tmp for the DB when running in production (RENDER env var is set
-# automatically by Render). Locally we use instance/ as before.
+# ── CONFIG ────────────────────────────────────────────────────
+# Reads SECRET_KEY from environment (set in .env via systemd EnvironmentFile)
+# Falls back to dev key when running locally
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "tuple-dev-secret-change-in-prod")
+
+# Database path:
+#   Render  → /tmp/tuple.db        (set RENDER=true env var)
+#   Lightsail / local → instance/tuple.db  (writable folder)
 if os.environ.get("RENDER"):
     _db_dir = "/tmp"
 else:
@@ -27,17 +31,14 @@ app.config["DATABASE"]      = os.path.join(_db_dir, "tuple.db")
 app.config["UPLOAD_FOLDER"] = os.path.join(_db_dir, "uploads")
 app.permanent_session_lifetime = timedelta(days=7)
 
-# ── DB ────────────────────────────────────────────────────────
-# Track whether this process has already set up the schema
+# ── DB HELPERS ────────────────────────────────────────────────
 _schema_created = False
 
 def _ensure_schema(db):
-    """Create all tables + seed data if not already done in this process."""
     global _schema_created
     if _schema_created:
         return
     _schema_created = True
-    # Make upload dir
     try:
         os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     except OSError:
@@ -48,35 +49,35 @@ def _ensure_schema(db):
         name       TEXT NOT NULL,
         email      TEXT UNIQUE NOT NULL,
         password   TEXT NOT NULL,
-        college    TEXT DEFAULT \'\',
-        stream     TEXT DEFAULT \'\',
-        phone      TEXT DEFAULT \'\',
-        role       TEXT DEFAULT \'student\',
+        college    TEXT DEFAULT '',
+        stream     TEXT DEFAULT '',
+        phone      TEXT DEFAULT '',
+        role       TEXT DEFAULT 'student',
         is_active  INTEGER DEFAULT 1,
-        created_at TEXT DEFAULT (datetime(\'now\'))
+        created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS internships (
         id             TEXT PRIMARY KEY,
         title          TEXT NOT NULL,
-        category       TEXT DEFAULT \'tech\',
-        description    TEXT DEFAULT \'\',
+        category       TEXT DEFAULT 'tech',
+        description    TEXT DEFAULT '',
         duration_weeks INTEGER DEFAULT 4,
-        difficulty     TEXT DEFAULT \'Beginner\',
-        skills         TEXT DEFAULT \'\',
+        difficulty     TEXT DEFAULT 'Beginner',
+        skills         TEXT DEFAULT '',
         is_active      INTEGER DEFAULT 1,
         enrolled       INTEGER DEFAULT 0,
-        created_at     TEXT DEFAULT (datetime(\'now\'))
+        created_at     TEXT DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS applications (
         id            TEXT PRIMARY KEY,
         user_id       TEXT NOT NULL,
         internship_id TEXT NOT NULL,
-        status        TEXT DEFAULT \'pending\',
-        motivation    TEXT DEFAULT \'\',
-        start_date    TEXT DEFAULT \'\',
-        end_date      TEXT DEFAULT \'\',
+        status        TEXT DEFAULT 'pending',
+        motivation    TEXT DEFAULT '',
+        start_date    TEXT DEFAULT '',
+        end_date      TEXT DEFAULT '',
         score         INTEGER DEFAULT 0,
-        applied_at    TEXT DEFAULT (datetime(\'now\')),
+        applied_at    TEXT DEFAULT (datetime('now')),
         UNIQUE(user_id, internship_id),
         FOREIGN KEY(user_id)       REFERENCES users(id),
         FOREIGN KEY(internship_id) REFERENCES internships(id)
@@ -86,7 +87,7 @@ def _ensure_schema(db):
         cert_id   TEXT UNIQUE NOT NULL,
         user_id   TEXT NOT NULL,
         app_id    TEXT NOT NULL,
-        issued_at TEXT DEFAULT (datetime(\'now\')),
+        issued_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(app_id)  REFERENCES applications(id)
     );
@@ -94,28 +95,24 @@ def _ensure_schema(db):
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
         name       TEXT NOT NULL,
         email      TEXT NOT NULL,
-        phone      TEXT DEFAULT \'\',
-        subject    TEXT DEFAULT \'\',
+        phone      TEXT DEFAULT '',
+        subject    TEXT DEFAULT '',
         message    TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime(\'now\'))
+        created_at TEXT DEFAULT (datetime('now'))
     );
     """)
     db.commit()
     _seed(db)
 
 def _seed(db):
-    import random
-    # Admin
     if not db.execute("SELECT id FROM users WHERE email=?", ("admin@tupleacademy.in",)).fetchone():
         db.execute("INSERT INTO users(id,name,email,password,role) VALUES(?,?,?,?,?)",
             (str(uuid.uuid4()), "Admin", "admin@tupleacademy.in", _hp("admin123"), "admin"))
         db.commit()
-    # Demo student
     if not db.execute("SELECT id FROM users WHERE email=?", ("student@example.com",)).fetchone():
         db.execute("INSERT INTO users(id,name,email,password,college,stream) VALUES(?,?,?,?,?,?)",
             (str(uuid.uuid4()), "Priya Sharma", "student@example.com", _hp("student123"), "Delhi University", "CSE"))
         db.commit()
-    # Internships
     if not db.execute("SELECT id FROM internships LIMIT 1").fetchone():
         programs = [
             ("Web Development","tech","Build real websites with HTML, CSS, JS & React. Deploy live projects.",4,"Beginner","HTML,CSS,JavaScript,React,Git",2400),
@@ -145,7 +142,6 @@ def _seed(db):
 def get_db():
     if "db" not in g:
         db_path = app.config["DATABASE"]
-        # Ensure parent dir exists (safe for both /tmp and instance/)
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             try:
@@ -156,7 +152,6 @@ def get_db():
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA journal_mode=WAL")
         g.db.execute("PRAGMA foreign_keys=ON")
-        # Always ensure schema exists — safe to call every new connection
         _ensure_schema(g.db)
     return g.db
 
@@ -458,10 +453,9 @@ def admin_toggle_user(uid):
     if u: qry("UPDATE users SET is_active=? WHERE id=?", (0 if u["is_active"] else 1, uid), commit=True)
     return jsonify(ok=True)
 
+# ── RUN ───────────────────────────────────────────────────────
 if __name__ == "__main__":
-    with app.app_context():
-        init_db()
     print("\n  ✦  Tuple Academy → http://localhost:5000")
     print("  ✦  Admin:   admin@tupleacademy.in  /  admin123")
     print("  ✦  Student: student@example.com    /  student123\n")
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5000)
