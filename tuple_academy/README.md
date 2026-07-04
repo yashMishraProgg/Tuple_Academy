@@ -1,4 +1,4 @@
-# Tuple Academy — Flask Web App
+# Tuple Academy — Flask App
 
 A full-stack virtual internship platform built with Flask + SQLite.
 
