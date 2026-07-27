@@ -156,8 +156,10 @@
           <div class="aml-item"><span class="aml-label">Certificate</span><span class="aml-value" style="color:var(--sage)">✓ Included</span></div>
           <div class="aml-item"><span class="aml-label">Enrolled</span><span class="aml-value">{{ intern.enrolled }}+ students</span></div>
         </div>
-        {% if intern.google_form_link %}
+        {% if intern.google_form_link and user %}
         <a href="{{ intern.google_form_link }}" target="_blank" rel="noopener" class="btn btn-rust btn-lg" style="width:100%;justify-content:center">Apply for Free →</a>
+        {% elif intern.google_form_link and not user %}
+        <a href="/login?next={{ request.path|urlencode }}" class="btn btn-rust btn-lg" style="width:100%;justify-content:center">Log In to Apply →</a>
         {% else %}
         <button class="btn btn-rust btn-lg" style="width:100%;justify-content:center" onclick="openApply()">Apply for Free →</button>
         {% endif %}
