@@ -265,12 +265,12 @@ def verify_page():
 @app.route("/login")
 def login_page():
     if "user_id" in session: return redirect(url_for("dashboard"))
-    return render_template("login.html")
+    return render_template("login.html", next=request.args.get("next",""))
 
 @app.route("/register")
 def register_page():
     if "user_id" in session: return redirect(url_for("dashboard"))
-    return render_template("register.html")
+    return render_template("register.html", next=request.args.get("next",""))
 
 @app.route("/dashboard")
 @login_required
@@ -326,6 +326,9 @@ def api_register():
     session.permanent = True
     session["user_id"] = uid
     session["role"] = "student"
+    nxt = d.get("next", "")
+    if nxt and nxt.startswith("/") and not nxt.startswith("//"):
+        return jsonify(ok=True, message="Account created!", redirect=nxt)
     return jsonify(ok=True, message="Account created!", redirect="/dashboard")
 
 @app.route("/api/login", methods=["POST"])
@@ -340,6 +343,9 @@ def api_login():
     session.permanent = True
     session["user_id"] = u["id"]
     session["role"] = u["role"]
+    nxt = d.get("next", "")
+    if nxt and nxt.startswith("/") and not nxt.startswith("//"):
+        return jsonify(ok=True, redirect=nxt)
     return jsonify(ok=True, redirect="/admin" if u["role"]=="admin" else "/dashboard")
 
 @app.route("/api/logout", methods=["POST"])
