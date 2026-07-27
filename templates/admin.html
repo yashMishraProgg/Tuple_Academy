@@ -145,6 +145,9 @@ tbody tr:hover td{background:var(--cream2)}
                 <input type="number" class="score-input" id="ascore_{{ app.id }}" min="0" max="100" placeholder="0-100" value="{{ app.score or '' }}">
                 <button class="tbl-btn tbl-btn-rust" onclick="updateApp('{{ app.id }}','ascore_')">Save</button>
                 <button class="tbl-btn tbl-btn-sage" onclick="issueCert('{{ app.id }}')">Issue Cert</button>
+                {% if app.status != 'accepted' %}
+                <button class="tbl-btn tbl-btn-sage" onclick="acceptApp('{{ app.id }}')">Accept</button>
+                {% endif %}
                 <button class="tbl-btn tbl-btn-red" onclick="rejectApp('{{ app.id }}')">Reject</button>
               </div>
             </td>
@@ -218,6 +221,30 @@ tbody tr:hover td{background:var(--cream2)}
 
     <!-- USERS -->
     <div class="tab-section" id="tab-users">
+      <div class="add-form">
+        <h3>➕ Add New User</h3>
+        <form id="addUserForm" onsubmit="addUser(event)">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" name="name" required placeholder="Priya Sharma"></div>
+            <div class="form-group"><label class="form-label">Email *</label><input class="form-input" type="email" name="email" required placeholder="you@email.com"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Password * <span style="font-weight:400;color:var(--muted)">(min 6 characters)</span></label><input class="form-input" type="text" name="password" required placeholder="Set a password"></div>
+            <div class="form-group"><label class="form-label">Role</label>
+              <select class="form-input" name="role">
+                <option value="student">Student</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group"><label class="form-label">College</label><input class="form-input" name="college" placeholder="Delhi University"></div>
+            <div class="form-group"><label class="form-label">Stream</label><input class="form-input" name="stream" placeholder="CSE / BBA / etc."></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" name="phone" placeholder="+91 9876543210"></div>
+          </div>
+          <button type="submit" class="btn btn-rust btn-md">Add User</button>
+        </form>
+      </div>
       <div class="admin-table-wrap">
         <div class="admin-table-header">
           <h3>All Users ({{ users|length }})</h3>
@@ -237,9 +264,12 @@ tbody tr:hover td{background:var(--cream2)}
             <td><span class="badge" style="{% if u.is_active %}background:rgba(107,124,96,.12);color:var(--sage){% else %}background:rgba(200,50,50,.1);color:#c83232{% endif %}">{{ 'Active' if u.is_active else 'Inactive' }}</span></td>
             <td>{{ u.created_at[:10] }}</td>
             <td>
-              {% if u.role != 'admin' %}
-              <button class="tbl-btn {% if u.is_active %}tbl-btn-red{% else %}tbl-btn-sage{% endif %}" onclick="toggleUser('{{ u.id }}',this)">{{ 'Disable' if u.is_active else 'Enable' }}</button>
-              {% endif %}
+              <div class="action-group">
+                {% if u.role != 'admin' %}
+                <button class="tbl-btn {% if u.is_active %}tbl-btn-red{% else %}tbl-btn-sage{% endif %}" onclick="toggleUser('{{ u.id }}',this)">{{ 'Disable' if u.is_active else 'Enable' }}</button>
+                {% endif %}
+                <button class="tbl-btn tbl-btn-rust" onclick="resetPassword('{{ u.id }}','{{ u.name }}')">Reset Password</button>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -331,6 +361,15 @@ function issueCert(id){
     });
 }
 
+function acceptApp(id){
+  fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:'accepted'})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Application accepted','success');setTimeout(()=>location.reload(),700);}
+      else toast(d.error,'error');
+    });
+}
+
 function rejectApp(id){
   if(!confirm('Reject this application?')) return;
   fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -357,6 +396,30 @@ function deleteInternship(id,btn){
   fetch('/api/admin/internship/'+id,{method:'DELETE'})
     .then(r=>r.json()).then(d=>{
       if(d.ok){toast('Internship deactivated','success');btn.closest('tr').style.opacity='.4';}
+    });
+}
+
+function addUser(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Adding…';
+  const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  fetch('/api/admin/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('User added!','success');setTimeout(()=>location.reload(),700);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Add User';}
+    });
+}
+
+function resetPassword(id,name){
+  const pw=prompt('Enter a new password for '+name+' (min 6 characters):');
+  if(pw===null) return;
+  if(pw.length<6){toast('Password must be at least 6 characters','error');return;}
+  fetch('/api/admin/user/'+id+'/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:pw})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Password reset! New password: '+pw,'success');}
+      else toast(d.error,'error');
     });
 }
 
