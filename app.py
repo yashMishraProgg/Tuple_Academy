@@ -388,6 +388,27 @@ def api_apply():
     qry("UPDATE internships SET enrolled=enrolled+1 WHERE id=?", (iid,), commit=True)
     return jsonify(ok=True, message="Application accepted! Check your dashboard.", redirect="/dashboard")
 
+@app.route("/api/apply-external", methods=["POST"])
+@login_required
+def api_apply_external():
+    """Called right before redirecting a logged-in user to an internship's
+    Google Form, so the application still shows up on their dashboard and
+    in the admin panel for manual accept/reject."""
+    d = request.get_json(silent=True) or request.form
+    uid = session["user_id"]
+    iid = d.get("internship_id", "")
+    intern = row("SELECT * FROM internships WHERE id=? AND is_active=1", (iid,))
+    if not intern:
+        return jsonify(ok=False, error="Internship not found"), 404
+    existing = row("SELECT id FROM applications WHERE user_id=? AND internship_id=?", (uid, iid))
+    if existing:
+        return jsonify(ok=True, message="Already applied")
+    aid = str(uuid.uuid4())
+    qry("INSERT INTO applications(id,user_id,internship_id,status) VALUES(?,?,?,?)",
+        (aid, uid, iid, "pending"), commit=True)
+    qry("UPDATE internships SET enrolled=enrolled+1 WHERE id=?", (iid,), commit=True)
+    return jsonify(ok=True, message="Application recorded")
+
 @app.route("/api/contact", methods=["POST"])
 def api_contact():
     d = request.get_json(silent=True) or request.form
@@ -458,6 +479,40 @@ def admin_add_internship():
 def admin_del_internship(iid):
     qry("UPDATE internships SET is_active=0 WHERE id=?", (iid,), commit=True)
     return jsonify(ok=True)
+
+@app.route("/api/admin/user", methods=["POST"])
+@login_required
+@admin_required
+def admin_add_user():
+    d = request.get_json(silent=True) or request.form
+    name, email, pw = (d.get("name","")).strip(), (d.get("email","")).strip().lower(), d.get("password","")
+    if not name or not email or not pw:
+        return jsonify(ok=False, error="Name, email and password required"), 400
+    if len(pw) < 6:
+        return jsonify(ok=False, error="Password min 6 characters"), 400
+    if row("SELECT id FROM users WHERE email=?", (email,)):
+        return jsonify(ok=False, error="Email already registered"), 409
+    uid = str(uuid.uuid4())
+    role = d.get("role","student")
+    if role not in ("student","admin"):
+        role = "student"
+    qry("INSERT INTO users(id,name,email,password,college,stream,phone,role) VALUES(?,?,?,?,?,?,?,?)",
+        (uid, name, email, _hp(pw), d.get("college",""), d.get("stream",""), d.get("phone",""), role), commit=True)
+    return jsonify(ok=True, message="User added", id=uid)
+
+@app.route("/api/admin/user/<uid>/reset-password", methods=["POST"])
+@login_required
+@admin_required
+def admin_reset_password(uid):
+    d = request.get_json(silent=True) or request.form
+    pw = d.get("password", "")
+    if len(pw) < 6:
+        return jsonify(ok=False, error="Password min 6 characters"), 400
+    u = row("SELECT id FROM users WHERE id=?", (uid,))
+    if not u:
+        return jsonify(ok=False, error="User not found"), 404
+    qry("UPDATE users SET password=? WHERE id=?", (_hp(pw), uid), commit=True)
+    return jsonify(ok=True, message="Password reset")
 
 @app.route("/api/admin/user/<uid>/toggle", methods=["POST"])
 @login_required
