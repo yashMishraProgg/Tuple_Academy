@@ -182,6 +182,7 @@ tbody tr:hover td{background:var(--cream2)}
             </div>
             <div class="form-group"><label class="form-label">Skills (comma-separated)</label><input class="form-input" name="skills" placeholder="Python, SQL, Excel"></div>
           </div>
+          <div class="form-group"><label class="form-label">Google Form Link</label><input class="form-input" name="google_form_link" type="url" placeholder="https://forms.gle/..."></div>
           <button type="submit" class="btn btn-rust btn-md">Add Internship</button>
         </form>
       </div>
@@ -192,7 +193,7 @@ tbody tr:hover td{background:var(--cream2)}
           <input type="text" class="search-box" placeholder="Search…" oninput="searchTable(this,'internTable')">
         </div>
         <table id="internTable">
-          <thead><tr><th>Title</th><th>Category</th><th>Duration</th><th>Difficulty</th><th>Enrolled</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>Title</th><th>Category</th><th>Duration</th><th>Difficulty</th><th>Enrolled</th><th>Form Link</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
           {% for i in internships %}
           <tr>
@@ -201,6 +202,7 @@ tbody tr:hover td{background:var(--cream2)}
             <td>{{ i.duration_weeks }}w</td>
             <td><span class="badge badge-{{ i.difficulty|lower }}">{{ i.difficulty }}</span></td>
             <td>{{ i.enrolled }}</td>
+            <td>{% if i.google_form_link %}<a href="{{ i.google_form_link }}" target="_blank" rel="noopener" style="color:var(--rust)">Open ↗</a>{% else %}<span style="color:var(--muted)">—</span>{% endif %}</td>
             <td><span class="badge" style="{% if i.is_active %}background:rgba(107,124,96,.12);color:var(--sage){% else %}background:rgba(200,50,50,.1);color:#c83232{% endif %}">{{ 'Active' if i.is_active else 'Inactive' }}</span></td>
             <td>
               {% if i.is_active %}
