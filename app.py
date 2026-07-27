@@ -64,6 +64,7 @@ def _ensure_schema(db):
         duration_weeks INTEGER DEFAULT 4,
         difficulty     TEXT DEFAULT 'Beginner',
         skills         TEXT DEFAULT '',
+        google_form_link TEXT DEFAULT '',
         is_active      INTEGER DEFAULT 1,
         enrolled       INTEGER DEFAULT 0,
         created_at     TEXT DEFAULT (datetime('now'))
@@ -102,6 +103,12 @@ def _ensure_schema(db):
     );
     """)
     db.commit()
+    # Migration: add google_form_link column if the internships table
+    # already existed before this column was introduced.
+    cols = [r[1] for r in db.execute("PRAGMA table_info(internships)").fetchall()]
+    if "google_form_link" not in cols:
+        db.execute("ALTER TABLE internships ADD COLUMN google_form_link TEXT DEFAULT ''")
+        db.commit()
     _seed(db)
 
 def _seed(db):
@@ -433,9 +440,10 @@ def _issue_cert(app_id):
 def admin_add_internship():
     d = request.get_json(silent=True) or request.form
     iid = str(uuid.uuid4())
-    qry("INSERT INTO internships(id,title,category,description,duration_weeks,difficulty,skills) VALUES(?,?,?,?,?,?,?)",
+    qry("INSERT INTO internships(id,title,category,description,duration_weeks,difficulty,skills,google_form_link) VALUES(?,?,?,?,?,?,?,?)",
         (iid, d.get("title",""), d.get("category","tech"), d.get("description",""),
-         int(d.get("duration_weeks",4)), d.get("difficulty","Beginner"), d.get("skills","")), commit=True)
+         int(d.get("duration_weeks",4)), d.get("difficulty","Beginner"), d.get("skills",""),
+         d.get("google_form_link","").strip()), commit=True)
     return jsonify(ok=True, message="Internship added", id=iid)
 
 @app.route("/api/admin/internship/<iid>", methods=["DELETE"])
