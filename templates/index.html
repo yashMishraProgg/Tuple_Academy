@@ -460,6 +460,7 @@ function openApply(iid,title,formLink){
       window.location.href='/login?next='+encodeURIComponent(window.location.pathname+window.location.search);
       return;
     }
+    fetch('/api/apply-external',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({internship_id:iid})});
     window.open(formLink,'_blank','noopener');
     return;
   }
