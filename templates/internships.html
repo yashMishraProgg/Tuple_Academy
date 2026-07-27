@@ -71,7 +71,7 @@
     </div>
     <div class="ic-footer">
       <div class="ic-slots"><div class="slot-dot"></div>Accepting now</div>
-      <button class="ic-btn" onclick="openApply('{{ i.id }}','{{ i.title }}')">Apply →</button>
+      <button class="ic-btn" onclick="openApply('{{ i.id }}','{{ i.title }}','{{ i.google_form_link }}')">Apply →</button>
     </div>
   </div>
   {% endfor %}
@@ -109,7 +109,11 @@ function filter(cat,btn){
   btn.classList.add('active');
   document.querySelectorAll('#grid .intern-card').forEach(c=>{c.style.display=(cat==='all'||c.dataset.cat===cat)?'':'none'});
 }
-function openApply(id,title){
+function openApply(id,title,formLink){
+  if(formLink){
+    window.open(formLink,'_blank','noopener');
+    return;
+  }
   document.getElementById('applyId').value=id;
   document.getElementById('applyTitle').textContent='Applying for: '+title;
   document.getElementById('applyModal').classList.add('open');
