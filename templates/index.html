@@ -331,7 +331,7 @@ h1.hero-h1 span{color:var(--rust);font-style:italic}
           </div>
           <div class="ic-foot">
             <div class="ic-slots"><div class="sdot"></div>Accepting now</div>
-            <button class="ic-abtn" onclick="openApply('{{ i.id }}','{{ i.title }}')">Apply →</button>
+            <button class="ic-abtn" onclick="openApply('{{ i.id }}','{{ i.title }}','{{ i.google_form_link }}')">Apply →</button>
           </div>
         </div>
       </div>
@@ -453,7 +453,11 @@ function fc(cat,btn){
 }
 
 let _sid='';
-function openApply(iid,title){
+function openApply(iid,title,formLink){
+  if(formLink){
+    window.open(formLink,'_blank','noopener');
+    return;
+  }
   _sid=iid||'';
   document.getElementById('apSub').textContent=title?'Applying for: '+title:'Fill in your details — offer letter within 48 hours.';
   if(iid) document.getElementById('dsel').value=iid;
