@@ -224,12 +224,13 @@ tbody tr:hover td{background:var(--cream2)}
           <input type="text" class="search-box" placeholder="Search user…" oninput="searchTable(this,'userTable')">
         </div>
         <table id="userTable">
-          <thead><tr><th>Name</th><th>Email</th><th>College</th><th>Stream</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>College</th><th>Stream</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
           <tbody>
           {% for u in users %}
           <tr>
             <td><strong>{{ u.name }}</strong></td>
             <td>{{ u.email }}</td>
+            <td>{{ u.phone or '—' }}</td>
             <td>{{ u.college or '—' }}</td>
             <td>{{ u.stream or '—' }}</td>
             <td><span class="badge {% if u.role=='admin' %}badge-advanced{% else %}badge-accepted{% endif %}">{{ u.role|title }}</span></td>
