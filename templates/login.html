@@ -46,7 +46,7 @@
     </form>
 
     <div class="auth-footer">
-      Don't have an account? <a href="/register">Create one free →</a>
+      Don't have an account? <a href="/register{{ '?next=' + next if next }}">Create one free →</a>
     </div>
   </div>
 </div>
@@ -58,6 +58,7 @@ function doLogin(e){
   const btn=document.getElementById('loginBtn');
   btn.disabled=true;btn.textContent='Logging in…';
   const data={};new FormData(e.target).forEach((v,k)=>data[k]=v);
+  data.next = {{ (next or '')|tojson }};
   fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
     .then(r=>r.json()).then(d=>{
       if(d.ok){toast('Welcome back!','success');setTimeout(()=>location.href=d.redirect,600);}
