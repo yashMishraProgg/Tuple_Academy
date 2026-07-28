@@ -40,8 +40,7 @@ tbody tr:hover td{background:var(--cream2)}
 .tbl-btn-red{background:rgba(200,50,50,.1);color:#c83232}
 .tbl-btn-red:hover{background:#c83232;color:#fff}
 .action-group{display:flex;gap:5px;flex-wrap:wrap}
-.score-input{width:60px;padding:4px 8px;border:1.5px solid var(--border2);border-radius:6px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream2);outline:none}
-.score-input:focus{border-color:var(--rust)}
+
 .no-data{text-align:center;padding:40px;color:var(--muted);font-size:14px}
 .add-form{background:var(--warm-white);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
 .add-form h3{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:18px}
@@ -97,20 +96,20 @@ tbody tr:hover td{background:var(--cream2)}
         <div class="admin-table-header"><h3>Recent Applications</h3></div>
         {% if applications %}
         <table>
-          <thead><tr><th>Student</th><th>Internship</th><th>Status</th><th>Score</th><th>Applied</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Student</th><th>Internship</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
           <tbody>
           {% for app in applications[:10] %}
           <tr>
             <td><strong>{{ app.student_name }}</strong><br><span style="color:var(--muted);font-size:11.5px">{{ app.student_email }}</span></td>
             <td>{{ app.intern_title }}</td>
             <td><span class="badge badge-{{ app.status }}">{{ app.status|title }}</span></td>
-            <td>{% if app.score %}{{ app.score }}/100{% else %}—{% endif %}</td>
             <td>{{ app.applied_at[:10] }}</td>
             <td>
               <div class="action-group">
-                <input type="number" class="score-input" id="score_{{ app.id }}" min="0" max="100" placeholder="Score" value="{{ app.score or '' }}">
-                <button class="tbl-btn tbl-btn-rust" onclick="updateApp('{{ app.id }}')">Save</button>
-                <button class="tbl-btn tbl-btn-sage" onclick="issueCert('{{ app.id }}')">Cert</button>
+                {% if app.status != 'accepted' %}
+                <button class="tbl-btn tbl-btn-sage" onclick="acceptApp('{{ app.id }}')">Accept</button>
+                {% endif %}
+                <button class="tbl-btn tbl-btn-red" onclick="rejectApp('{{ app.id }}')">Reject</button>
               </div>
             </td>
           </tr>
@@ -130,7 +129,7 @@ tbody tr:hover td{background:var(--cream2)}
         </div>
         {% if applications %}
         <table id="appTable">
-          <thead><tr><th>Student</th><th>Email</th><th>Internship</th><th>Status</th><th>Score</th><th>Applied</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Student</th><th>Email</th><th>Internship</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
           <tbody>
           {% for app in applications %}
           <tr>
@@ -138,13 +137,9 @@ tbody tr:hover td{background:var(--cream2)}
             <td>{{ app.student_email }}</td>
             <td>{{ app.intern_title }}</td>
             <td><span class="badge badge-{{ app.status }}">{{ app.status|title }}</span></td>
-            <td>{% if app.score %}{{ app.score }}/100{% else %}—{% endif %}</td>
             <td>{{ app.applied_at[:10] }}</td>
             <td>
               <div class="action-group">
-                <input type="number" class="score-input" id="ascore_{{ app.id }}" min="0" max="100" placeholder="0-100" value="{{ app.score or '' }}">
-                <button class="tbl-btn tbl-btn-rust" onclick="updateApp('{{ app.id }}','ascore_')">Save</button>
-                <button class="tbl-btn tbl-btn-sage" onclick="issueCert('{{ app.id }}')">Issue Cert</button>
                 {% if app.status != 'accepted' %}
                 <button class="tbl-btn tbl-btn-sage" onclick="acceptApp('{{ app.id }}')">Accept</button>
                 {% endif %}
@@ -280,6 +275,25 @@ tbody tr:hover td{background:var(--cream2)}
 
     <!-- CERTIFICATES -->
     <div class="tab-section" id="tab-certificates">
+      <div class="add-form">
+        <h3>➕ Add Certificate (Verify ID + PDF)</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Use this to make a previously-issued certificate PDF searchable and viewable on the public Verify page.</p>
+        <form id="addCertForm" onsubmit="addCertificate(event)" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Student Name *</label><input class="form-input" name="student_name" required placeholder="Priya Sharma"></div>
+            <div class="form-group"><label class="form-label">Internship Title *</label><input class="form-input" name="internship_title" required placeholder="Web Development Internship"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Verify ID (Certificate ID) *</label><input class="form-input" name="cert_id" required placeholder="TA-2025-WE-0001"></div>
+            <div class="form-group"><label class="form-label">Period <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input class="form-input" name="period_text" placeholder="Jan 2025 – Mar 2025"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Score <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input class="form-input" name="score" placeholder="e.g. 85"></div>
+            <div class="form-group"><label class="form-label">Certificate PDF *</label><input class="form-input" type="file" name="pdf" accept="application/pdf" required></div>
+          </div>
+          <button type="submit" class="btn btn-rust btn-md">Add Certificate</button>
+        </form>
+      </div>
       <div class="admin-table-wrap">
         <div class="admin-table-header">
           <h3>Issued Certificates ({{ certificates|length }})</h3>
@@ -287,7 +301,7 @@ tbody tr:hover td{background:var(--cream2)}
         </div>
         {% if certificates %}
         <table id="certTable">
-          <thead><tr><th>Certificate ID</th><th>Student</th><th>Internship</th><th>Issued</th><th>Verify</th></tr></thead>
+          <thead><tr><th>Certificate ID</th><th>Student</th><th>Internship</th><th>Issued</th><th>PDF</th><th>Verify</th></tr></thead>
           <tbody>
           {% for c in certificates %}
           <tr>
@@ -295,6 +309,7 @@ tbody tr:hover td{background:var(--cream2)}
             <td>{{ c.name }}</td>
             <td>{{ c.title }}</td>
             <td>{{ c.issued_at[:10] }}</td>
+            <td>{% if c.pdf_filename %}<a href="/uploads/{{ c.pdf_filename }}" target="_blank" style="color:var(--rust)">Open ↗</a>{% else %}<span style="color:var(--muted)">—</span>{% endif %}</td>
             <td><a href="/verify?id={{ c.cert_id }}" target="_blank" class="tbl-btn tbl-btn-sage">View</a></td>
           </tr>
           {% endfor %}
@@ -340,27 +355,6 @@ function showTab(name,btn){
   btn.classList.add('active');
 }
 
-function updateApp(id, prefix='score_'){
-  const score=document.getElementById((prefix||'score_')+id).value;
-  if(!score){toast('Enter a score 0-100','error');return;}
-  fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({score:parseInt(score)})})
-    .then(r=>r.json()).then(d=>{
-      if(d.ok){toast('Score saved! '+(parseInt(score)>=60?'Certificate auto-issued ✓':''),'success');
-        setTimeout(()=>location.reload(),900);}
-      else toast(d.error,'error');
-    });
-}
-
-function issueCert(id){
-  if(!confirm('Issue certificate for this application?')) return;
-  fetch('/api/admin/application/'+id+'/cert',{method:'POST'})
-    .then(r=>r.json()).then(d=>{
-      if(d.ok){toast('Certificate issued!','success');setTimeout(()=>location.reload(),800);}
-      else toast(d.error,'error');
-    });
-}
-
 function acceptApp(id){
   fetch('/api/admin/application/'+id,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({status:'accepted'})})
@@ -396,6 +390,18 @@ function deleteInternship(id,btn){
   fetch('/api/admin/internship/'+id,{method:'DELETE'})
     .then(r=>r.json()).then(d=>{
       if(d.ok){toast('Internship deactivated','success');btn.closest('tr').style.opacity='.4';}
+    });
+}
+
+function addCertificate(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Uploading…';
+  const data=new FormData(e.target);
+  fetch('/api/admin/certificate',{method:'POST',body:data})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){toast('Certificate added!','success');setTimeout(()=>location.reload(),700);}
+      else{toast(d.error,'error');btn.disabled=false;btn.textContent='Add Certificate';}
     });
 }
 
