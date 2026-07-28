@@ -65,7 +65,10 @@
       <div class="cr-name">{{ cert.student_name }}</div>
       <div class="cr-certify">has successfully completed the</div>
       <div class="cr-domain">{{ cert.internship_title }}</div>
-      <div class="cr-period">{{ cert.start_date }} → {{ cert.end_date }} &nbsp;·&nbsp; Score: {{ cert.score }}/100</div>
+      <div class="cr-period">{% if cert.start_date and cert.end_date %}{{ cert.start_date }} → {{ cert.end_date }}{% elif cert.period_text %}{{ cert.period_text }}{% endif %}{% if cert.score %} &nbsp;·&nbsp; Score: {{ cert.score }}/100{% endif %}</div>
+      {% if cert.pdf_filename %}
+      <div style="margin-bottom:20px"><a href="/uploads/{{ cert.pdf_filename }}" target="_blank" class="btn btn-rust btn-md">View Certificate PDF ↗</a></div>
+      {% endif %}
       <div class="cr-footer">
         <div class="cr-footer-item"><div class="f-label">Certificate ID</div><div class="f-val">{{ cert.cert_id }}</div></div>
         <div class="cr-footer-item"><div class="f-label">Issued On</div><div class="f-val">{{ cert.issued_at[:10] }}</div></div>
