@@ -9,8 +9,9 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import (
     Flask, request, jsonify, g, session,
-    render_template, redirect, url_for
+    render_template, redirect, url_for, send_from_directory
 )
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -84,10 +85,16 @@ def _ensure_schema(db):
         FOREIGN KEY(internship_id) REFERENCES internships(id)
     );
     CREATE TABLE IF NOT EXISTS certificates (
-        id        TEXT PRIMARY KEY,
-        cert_id   TEXT UNIQUE NOT NULL,
-        user_id   TEXT NOT NULL,
-        app_id    TEXT NOT NULL,
+        id            TEXT PRIMARY KEY,
+        cert_id       TEXT UNIQUE NOT NULL,
+        user_id       TEXT,
+        app_id        TEXT,
+        student_name      TEXT DEFAULT '',
+        internship_title  TEXT DEFAULT '',
+        period_text       TEXT DEFAULT '',
+        score             TEXT DEFAULT '',
+        pdf_filename      TEXT DEFAULT '',
+        is_legacy         INTEGER DEFAULT 0,
         issued_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(app_id)  REFERENCES applications(id)
@@ -108,6 +115,33 @@ def _ensure_schema(db):
     cols = [r[1] for r in db.execute("PRAGMA table_info(internships)").fetchall()]
     if "google_form_link" not in cols:
         db.execute("ALTER TABLE internships ADD COLUMN google_form_link TEXT DEFAULT ''")
+        db.commit()
+    # Migration: rebuild certificates table so user_id/app_id are nullable
+    # and legacy/uploaded-PDF certificates are supported, without losing
+    # any certificates already issued through the normal flow.
+    cert_cols = [r[1] for r in db.execute("PRAGMA table_info(certificates)").fetchall()]
+    if "pdf_filename" not in cert_cols:
+        db.execute("ALTER TABLE certificates RENAME TO certificates_old")
+        db.execute("""
+            CREATE TABLE certificates (
+                id            TEXT PRIMARY KEY,
+                cert_id       TEXT UNIQUE NOT NULL,
+                user_id       TEXT,
+                app_id        TEXT,
+                student_name      TEXT DEFAULT '',
+                internship_title  TEXT DEFAULT '',
+                period_text       TEXT DEFAULT '',
+                score             TEXT DEFAULT '',
+                pdf_filename      TEXT DEFAULT '',
+                is_legacy         INTEGER DEFAULT 0,
+                issued_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY(user_id) REFERENCES users(id),
+                FOREIGN KEY(app_id)  REFERENCES applications(id)
+            )
+        """)
+        db.execute("""INSERT INTO certificates(id,cert_id,user_id,app_id,issued_at)
+                      SELECT id,cert_id,user_id,app_id,issued_at FROM certificates_old""")
+        db.execute("DROP TABLE certificates_old")
         db.commit()
     _seed(db)
 
@@ -253,12 +287,15 @@ def verify_page():
     cert_id = request.args.get("id", "")
     cert = None
     if cert_id:
-        cert = row("""SELECT c.cert_id, u.name as student_name, i.title as internship_title,
-                             a.score, a.start_date, a.end_date, c.issued_at
+        cert = row("""SELECT c.cert_id, c.pdf_filename, c.is_legacy, c.issued_at,
+                             COALESCE(u.name, c.student_name) as student_name,
+                             COALESCE(i.title, c.internship_title) as internship_title,
+                             COALESCE(a.score, c.score) as score,
+                             a.start_date, a.end_date, c.period_text
                       FROM certificates c
-                      JOIN users u ON u.id=c.user_id
-                      JOIN applications a ON a.id=c.app_id
-                      JOIN internships i ON i.id=a.internship_id
+                      LEFT JOIN users u ON u.id=c.user_id
+                      LEFT JOIN applications a ON a.id=c.app_id
+                      LEFT JOIN internships i ON i.id=a.internship_id
                       WHERE c.cert_id=?""", (cert_id,))
     return render_template("verify.html", cert=cert, cert_id=cert_id, user=me())
 
@@ -296,9 +333,14 @@ def admin_panel():
                        FROM applications a JOIN users u ON u.id=a.user_id
                        JOIN internships i ON i.id=a.internship_id ORDER BY a.applied_at DESC""")
     contacts_= rows("SELECT * FROM contacts ORDER BY created_at DESC LIMIT 50")
-    certs_   = rows("""SELECT c.*, u.name, i.title FROM certificates c
-                       JOIN users u ON u.id=c.user_id JOIN applications a ON a.id=c.app_id
-                       JOIN internships i ON i.id=a.internship_id ORDER BY c.issued_at DESC""")
+    certs_   = rows("""SELECT c.*,
+                              COALESCE(u.name, c.student_name) as name,
+                              COALESCE(i.title, c.internship_title) as title
+                       FROM certificates c
+                       LEFT JOIN users u ON u.id=c.user_id
+                       LEFT JOIN applications a ON a.id=c.app_id
+                       LEFT JOIN internships i ON i.id=a.internship_id
+                       ORDER BY c.issued_at DESC""")
     stats = {
         "total_users": len([u for u in users_ if u["role"]=="student"]),
         "total_apps":  len(apps_),
@@ -421,11 +463,16 @@ def api_contact():
 
 @app.route("/api/verify/<cert_id>")
 def api_verify(cert_id):
-    r = row("""SELECT c.cert_id, u.name as student_name, i.title as internship,
-                      a.score, a.start_date, a.end_date, c.issued_at
-               FROM certificates c JOIN users u ON u.id=c.user_id
-               JOIN applications a ON a.id=c.app_id
-               JOIN internships i ON i.id=a.internship_id WHERE c.cert_id=?""", (cert_id,))
+    r = row("""SELECT c.cert_id, c.pdf_filename, c.is_legacy, c.issued_at,
+                      COALESCE(u.name, c.student_name) as student_name,
+                      COALESCE(i.title, c.internship_title) as internship,
+                      COALESCE(a.score, c.score) as score,
+                      a.start_date, a.end_date, c.period_text
+               FROM certificates c
+               LEFT JOIN users u ON u.id=c.user_id
+               LEFT JOIN applications a ON a.id=c.app_id
+               LEFT JOIN internships i ON i.id=a.internship_id
+               WHERE c.cert_id=?""", (cert_id,))
     if not r: return jsonify(valid=False, error="Certificate not found")
     return jsonify(valid=True, **r)
 
@@ -442,6 +489,40 @@ def admin_update_app(aid):
         qry("UPDATE applications SET score=? WHERE id=?", (sc, aid), commit=True)
         if sc >= 60: _issue_cert(aid)
     return jsonify(ok=True)
+
+@app.route("/api/admin/certificate", methods=["POST"])
+@login_required
+@admin_required
+def admin_add_certificate():
+    d = request.form
+    cert_id = (d.get("cert_id","")).strip()
+    student_name = (d.get("student_name","")).strip()
+    internship_title = (d.get("internship_title","")).strip()
+    period_text = (d.get("period_text","")).strip()
+    score = (d.get("score","")).strip()
+
+    if not cert_id or not student_name or not internship_title:
+        return jsonify(ok=False, error="Verify ID, student name, and internship title are required"), 400
+    if row("SELECT id FROM certificates WHERE cert_id=?", (cert_id,)):
+        return jsonify(ok=False, error="A certificate with this Verify ID already exists"), 409
+
+    file = request.files.get("pdf")
+    pdf_filename = ""
+    if file and file.filename:
+        if not file.filename.lower().endswith(".pdf"):
+            return jsonify(ok=False, error="Only PDF files are allowed"), 400
+        safe_id = secure_filename(cert_id)
+        pdf_filename = f"cert_{safe_id}_{uuid.uuid4().hex[:8]}.pdf"
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], pdf_filename))
+
+    qry("""INSERT INTO certificates(id,cert_id,student_name,internship_title,period_text,score,pdf_filename,is_legacy)
+           VALUES(?,?,?,?,?,?,?,1)""",
+        (str(uuid.uuid4()), cert_id, student_name, internship_title, period_text, score, pdf_filename), commit=True)
+    return jsonify(ok=True, message="Certificate added")
+
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 @app.route("/api/admin/application/<aid>/cert", methods=["POST"])
 @login_required
