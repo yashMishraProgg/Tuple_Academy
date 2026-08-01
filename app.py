@@ -284,7 +284,7 @@ def contact_page():
 
 @app.route("/verify")
 def verify_page():
-    cert_id = request.args.get("id", "")
+    cert_id = request.args.get("id", "") or request.args.get("code", "")
     cert = None
     if cert_id:
         cert = row("""SELECT c.cert_id, c.pdf_filename, c.is_legacy, c.issued_at,
